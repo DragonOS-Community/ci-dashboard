@@ -1,0 +1,54 @@
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 依赖
+node_modules/
+vendor/
+
+# 构建输出
+dist/
+build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 测试
+*.test
+*.out
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 日志
+*.log
+logs/
+
+# 上传文件和数据目录
+uploads/
+data/*
+!data/.gitkeep
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# Go
+go.work
+go.work.sum
+
+# 数据库
+*.db
+*.sqlite
+*.sqlite3
+

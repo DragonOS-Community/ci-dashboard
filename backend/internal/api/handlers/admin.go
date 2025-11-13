@@ -1,0 +1,221 @@
+package handlers
+
+import (
+	"strconv"
+
+	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
+	"github.com/dragonos/dragonos-ci-dashboard/internal/services"
+	"github.com/dragonos/dragonos-ci-dashboard/pkg/response"
+	"github.com/gin-gonic/gin"
+)
+
+// AdminLogin 管理员登录
+func AdminLogin(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	// 认证用户
+	user, err := services.AuthenticateUser(req.Username, req.Password)
+	if err != nil {
+		response.Unauthorized(c, "Invalid username or password")
+		return
+	}
+
+	// 生成JWT token
+	token, err := services.GenerateJWT(user.ID, user.Username, string(user.Role))
+	if err != nil {
+		response.InternalServerError(c, "Failed to generate token")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"token":    token,
+		"user_id":  user.ID,
+		"username": user.Username,
+		"role":     user.Role,
+	})
+}
+
+// AdminRegister 管理员注册
+func AdminRegister(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required,min=3,max=100"`
+		Password string `json:"password" binding:"required,min=6"`
+		Role     string `json:"role" binding:"omitempty,oneof=admin user"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	// 默认角色为admin
+	role := models.UserRoleAdmin
+	if req.Role != "" {
+		role = models.UserRole(req.Role)
+	}
+
+	// 创建用户
+	user, err := services.CreateUser(req.Username, req.Password, role)
+	if err != nil {
+		if err.Error() == "username already exists" {
+			response.BadRequest(c, "Username already exists")
+			return
+		}
+		response.InternalServerError(c, "Failed to create user")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"user_id":  user.ID,
+		"username": user.Username,
+		"role":     user.Role,
+		"message":  "User registered successfully",
+	})
+}
+
+// GetAPIKeys 获取API密钥列表
+func GetAPIKeys(c *gin.Context) {
+	keys, err := services.ListAPIKeys()
+	if err != nil {
+		response.InternalServerError(c, "Failed to get API keys")
+		return
+	}
+
+	// 不返回密钥哈希值
+	for i := range keys {
+		keys[i].KeyHash = ""
+	}
+
+	response.Success(c, keys)
+}
+
+// CreateAPIKey 创建API密钥
+func CreateAPIKey(c *gin.Context) {
+	var req struct {
+		Name      string  `json:"name" binding:"required"`
+		ProjectID *uint64 `json:"project_id"`
+		ExpiresAt *string `json:"expires_at"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	// 创建API密钥（expiresAt 直接使用请求中的字符串）
+	apiKey, key, err := services.CreateAPIKey(req.Name, req.ProjectID, req.ExpiresAt)
+	if err != nil {
+		response.InternalServerError(c, "Failed to create API key")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"id":         apiKey.ID,
+		"name":       apiKey.Name,
+		"project_id": apiKey.ProjectID,
+		"api_key":    key, // 只在创建时返回一次
+		"created_at": apiKey.CreatedAt,
+		"expires_at": apiKey.ExpiresAt,
+	})
+}
+
+// DeleteAPIKey 删除API密钥
+func DeleteAPIKey(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid API key ID")
+		return
+	}
+
+	if err := services.DeleteAPIKey(id); err != nil {
+		response.InternalServerError(c, "Failed to delete API key")
+		return
+	}
+
+	response.Success(c, nil)
+}
+
+// GetProfile 获取当前用户信息
+func GetProfile(c *gin.Context) {
+	// 从中间件获取用户ID
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// 转换为uint64
+	id, ok := userID.(uint64)
+	if !ok {
+		response.InternalServerError(c, "Invalid user ID type")
+		return
+	}
+
+	// 获取用户信息
+	user, err := services.GetUserByID(id)
+	if err != nil {
+		response.NotFound(c, "User not found")
+		return
+	}
+
+	// 返回用户信息（不包含密码哈希）
+	response.Success(c, gin.H{
+		"id":         user.ID,
+		"username":   user.Username,
+		"role":       user.Role,
+		"created_at": user.CreatedAt,
+		"updated_at": user.UpdatedAt,
+	})
+}
+
+// UpdatePassword 更新用户密码
+func UpdatePassword(c *gin.Context) {
+	// 从中间件获取用户名
+	username, exists := c.Get("username")
+	if !exists {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	usernameStr, ok := username.(string)
+	if !ok {
+		response.InternalServerError(c, "Invalid username type")
+		return
+	}
+
+	var req struct {
+		OldPassword string `json:"old_password" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required,min=6"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	// 验证旧密码
+	user, err := services.AuthenticateUser(usernameStr, req.OldPassword)
+	if err != nil {
+		response.BadRequest(c, "Old password is incorrect")
+		return
+	}
+
+	// 更新密码
+	if err := services.UpdateUserPasswordByID(user.ID, req.NewPassword); err != nil {
+		response.InternalServerError(c, "Failed to update password")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "Password updated successfully",
+	})
+}
