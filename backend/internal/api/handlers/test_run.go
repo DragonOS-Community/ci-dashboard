@@ -104,12 +104,10 @@ func GetTestCasesByTestRunID(c *gin.Context) {
 // CreateTestRun 创建测试运行（受保护接口）
 func CreateTestRun(c *gin.Context) {
 	var req struct {
-		ProjectID     uint64 `json:"project_id" binding:"required"`
-		BranchName    string `json:"branch_name" binding:"required"`
-		CommitID      string `json:"commit_id" binding:"required"`
-		CommitShortID string `json:"commit_short_id" binding:"required"`
-		TestType      string `json:"test_type"`
-		TestCases     []struct {
+		BranchName string `json:"branch_name" binding:"required"`
+		CommitID   string `json:"commit_id" binding:"required"`
+		TestType   string `json:"test_type"`
+		TestCases  []struct {
 			Name       string `json:"name" binding:"required"`
 			Status     string `json:"status" binding:"required"`
 			DurationMs uint32 `json:"duration_ms"`
@@ -124,18 +122,50 @@ func CreateTestRun(c *gin.Context) {
 		return
 	}
 
-	// 默认测试类型
+	// 验证 commit_id 最少8位
+	if len(req.CommitID) < 8 {
+		response.BadRequest(c, "commit_id must be at least 8 characters")
+		return
+	}
+
+	// 验证 test_type 只能为 gvisor
 	testType := req.TestType
 	if testType == "" {
 		testType = "gvisor"
 	}
+	if testType != "gvisor" {
+		response.BadRequest(c, "test_type must be 'gvisor'")
+		return
+	}
+
+	// 自动截取 commit_short_id（前10位）
+	commitShortID := req.CommitID
+	if len(commitShortID) > 10 {
+		commitShortID = commitShortID[:10]
+	}
+
+	// 使用默认项目ID 1
+	const defaultProjectID = 1
+
+	// 验证并截断日志长度
+	const maxLogLength = 2048
+	for i := range req.TestCases {
+		if len(req.TestCases[i].ErrorLog) > maxLogLength {
+			response.BadRequest(c, "error_log exceeds maximum length of 2048 characters")
+			return
+		}
+		if len(req.TestCases[i].DebugLog) > maxLogLength {
+			response.BadRequest(c, "debug_log exceeds maximum length of 2048 characters")
+			return
+		}
+	}
 
 	// 创建测试运行
 	testRun, err := services.CreateTestRun(
-		req.ProjectID,
+		defaultProjectID,
 		req.BranchName,
 		req.CommitID,
-		req.CommitShortID,
+		commitShortID,
 		testType,
 	)
 	if err != nil {
