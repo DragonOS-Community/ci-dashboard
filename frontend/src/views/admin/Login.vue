@@ -36,7 +36,7 @@ const formData = ref({
 const handleLogin = async () => {
   const success = await adminStore.login(formData.value.username, formData.value.password)
   if (success) {
-    const redirect = route.query.redirect || '/admin/api-keys'
+    const redirect = route.query.redirect || '/admin/dashboard'
     router.push(redirect)
   }
 }
