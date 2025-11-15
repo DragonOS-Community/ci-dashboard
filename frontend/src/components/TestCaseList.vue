@@ -1,5 +1,12 @@
 <template>
-  <t-table :data="testCases" :columns="columns" hover>
+  <t-table
+    :data="testCases"
+    :columns="columns"
+    hover
+    row-key="id"
+    :sort="sortInfo"
+    @sort-change="handleSortChange"
+  >
     <template #status="{ row }">
       <t-tag :theme="getStatusTheme(row.status)">
         {{ getStatusText(row.status) }}
@@ -15,19 +22,67 @@
 </template>
 
 <script setup>
-defineProps({
+import { ref, watch } from 'vue'
+
+const props = defineProps({
   testCases: {
     type: Array,
     default: () => [],
   },
+  sortField: {
+    type: String,
+    default: '',
+  },
+  sortOrder: {
+    type: String,
+    default: '',
+  },
 })
 
+const emit = defineEmits(['sort-change'])
+
+const sortInfo = ref([])
+
+// 同步外部排序状态
+watch(
+  () => [props.sortField, props.sortOrder],
+  ([field, order]) => {
+    if (field && order) {
+      sortInfo.value = [
+        {
+          sortBy: field,
+          descending: order === 'desc',
+        },
+      ]
+    } else {
+      sortInfo.value = []
+    }
+  },
+  { immediate: true }
+)
+
 const columns = [
-  { colKey: 'name', title: '测例名称', width: 300 },
+  { 
+    colKey: 'name', 
+    title: '测例名称', 
+    width: 300, 
+    sortType: 'all',
+    sorter: true
+  },
   { colKey: 'status', title: '状态', width: 100 },
-  { colKey: 'duration_ms', title: '耗时(ms)', width: 120 },
+  { 
+    colKey: 'duration_ms', 
+    title: '耗时(ms)', 
+    width: 120, 
+    sortType: 'all',
+    sorter: true
+  },
   { colKey: 'error_log', title: '错误日志', width: 150 },
 ]
+
+const handleSortChange = (sortInfo) => {
+  emit('sort-change', sortInfo)
+}
 
 const getStatusTheme = (status) => {
   const themes = {

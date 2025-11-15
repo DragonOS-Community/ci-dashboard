@@ -153,8 +153,48 @@
                   </t-tab-panel>
                 </t-tabs>
               </div>
+              <div class="test-cases-toolbar">
+                <div class="toolbar-left">
+                  <t-input
+                    v-model="searchKeyword"
+                    placeholder="搜索测例名称..."
+                    clearable
+                    class="search-input"
+                  >
+                    <template #prefix-icon>
+                      <t-icon name="search" />
+                    </template>
+                  </t-input>
+                  <span v-if="searchKeyword.trim()" class="search-result-info">
+                    找到 {{ filteredTestCases.length }} 个结果
+                  </span>
+                </div>
+              </div>
               <div class="test-cases-content">
-                <TestCaseList :test-cases="currentTestCases" />
+                <TestCaseList
+                  v-if="!searchKeyword.trim() || filteredTestCases.length > 0"
+                  :test-cases="paginatedTestCases"
+                  :sort-field="sortField"
+                  :sort-order="sortOrder"
+                  @sort-change="handleSortChange"
+                />
+                <t-empty
+                  v-if="searchKeyword.trim() && filteredTestCases.length === 0"
+                  description="未找到匹配的测例"
+                  :icon="'search'"
+                  class="empty-state"
+                />
+              </div>
+              <div class="test-cases-pagination" v-if="filteredTestCases.length > pageSize">
+                <t-pagination
+                  v-model="currentPage"
+                  :total="filteredTestCases.length"
+                  :page-size="pageSize"
+                  :page-size-options="[10, 20, 50, 100]"
+                  show-sizer
+                  show-jumper
+                  @page-size-change="handlePageSizeChange"
+                />
               </div>
             </t-card>
           </div>
@@ -203,7 +243,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTestRunStore } from '@/stores/testRun'
 import { getTestCasesByTestRunId, getFilesByTestRunId, downloadFile as downloadFileAPI } from '@/api/testRun'
@@ -217,12 +257,18 @@ const testRunStore = useTestRunStore()
 const activeTab = ref('all')
 const testCases = ref([])
 const files = ref([])
+const searchKeyword = ref('')
+const currentPage = ref(1)
+const pageSize = ref(20)
+const sortField = ref('') // 排序字段：'name' 或 'duration_ms'
+const sortOrder = ref('') // 排序方向：'asc' 或 'desc'
 
 const allTestCases = computed(() => testCases.value)
 const passedTestCases = computed(() => testCases.value.filter(tc => tc.status === 'passed'))
 const failedTestCases = computed(() => testCases.value.filter(tc => tc.status === 'failed'))
 
-const currentTestCases = computed(() => {
+// 根据标签页过滤的测例
+const tabFilteredTestCases = computed(() => {
   switch (activeTab.value) {
     case 'passed':
       return passedTestCases.value
@@ -232,6 +278,96 @@ const currentTestCases = computed(() => {
       return allTestCases.value
   }
 })
+
+// 根据搜索关键词过滤的测例
+const filteredTestCases = computed(() => {
+  let result = tabFilteredTestCases.value
+  
+  // 搜索过滤
+  if (searchKeyword.value.trim()) {
+    const keyword = searchKeyword.value.trim().toLowerCase()
+    result = result.filter(tc => {
+      return tc.name && tc.name.toLowerCase().includes(keyword)
+    })
+  }
+  
+  // 排序
+  if (sortField.value && sortOrder.value) {
+    result = [...result].sort((a, b) => {
+      let aValue, bValue
+      
+      if (sortField.value === 'name') {
+        // 按名称排序（字符串）
+        aValue = (a.name || '').toLowerCase()
+        bValue = (b.name || '').toLowerCase()
+        if (sortOrder.value === 'asc') {
+          return aValue.localeCompare(bValue, 'zh-CN')
+        } else {
+          return bValue.localeCompare(aValue, 'zh-CN')
+        }
+      } else if (sortField.value === 'duration_ms') {
+        // 按耗时排序（数字）
+        aValue = a.duration_ms || 0
+        bValue = b.duration_ms || 0
+        if (sortOrder.value === 'asc') {
+          return aValue - bValue
+        } else {
+          return bValue - aValue
+        }
+      }
+      return 0
+    })
+  }
+  
+  return result
+})
+
+// 分页后的测例
+const paginatedTestCases = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredTestCases.value.slice(start, end)
+})
+
+// 监听搜索关键词变化，重置到第一页
+watch(searchKeyword, () => {
+  currentPage.value = 1
+})
+
+// 监听标签页变化，重置到第一页
+watch(activeTab, () => {
+  currentPage.value = 1
+})
+
+// 监听排序变化，重置到第一页
+watch([sortField, sortOrder], () => {
+  currentPage.value = 1
+})
+
+// 处理每页显示数量变化
+const handlePageSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+}
+
+// 处理排序变化
+const handleSortChange = (sortInfo) => {
+  // TDesign 表格的 sort-change 事件可能返回数组或对象
+  let sortData = null
+  if (Array.isArray(sortInfo) && sortInfo.length > 0) {
+    sortData = sortInfo[0]
+  } else if (sortInfo && typeof sortInfo === 'object') {
+    sortData = sortInfo
+  }
+  
+  if (sortData && sortData.sortBy) {
+    sortField.value = sortData.sortBy
+    sortOrder.value = sortData.descending ? 'desc' : 'asc'
+  } else {
+    sortField.value = ''
+    sortOrder.value = ''
+  }
+}
 
 const passRate = computed(() => {
   if (allTestCases.value.length === 0) return 0
@@ -652,8 +788,40 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+.test-cases-toolbar {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  max-width: 400px;
+}
+
+.search-result-info {
+  font-size: 14px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
 .test-cases-content {
   margin-top: 16px;
+}
+
+.empty-state {
+  margin: 40px 0;
+}
+
+.test-cases-pagination {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
 }
 
 /* 文件列表 */
