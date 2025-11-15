@@ -58,6 +58,12 @@ func SetupRouter() *gin.Engine {
 		admin.GET("/api-keys", handlers.GetAPIKeys)
 		admin.POST("/api-keys", handlers.CreateAPIKey)
 		admin.DELETE("/api-keys/:id", handlers.DeleteAPIKey)
+		// 项目管理接口
+		admin.GET("/projects", handlers.GetProjects)
+		admin.GET("/projects/:id", handlers.GetProjectByID)
+		admin.POST("/projects", handlers.CreateProject)
+		admin.PUT("/projects/:id", handlers.UpdateProject)
+		admin.DELETE("/projects/:id", handlers.DeleteProject)
 		// 个人面板接口
 		admin.GET("/profile", handlers.GetProfile)
 		admin.PUT("/profile/password", handlers.UpdatePassword)

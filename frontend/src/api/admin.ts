@@ -127,3 +127,62 @@ export function getDashboardTrend(days: number = 7): AxiosPromise<TrendData[]> {
     params: { days },
   });
 }
+
+// 项目相关接口
+export interface Project {
+  id: number;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectData {
+  name: string;
+  description?: string;
+}
+
+// 获取项目列表
+export function getProjects(): AxiosPromise<Project[]> {
+  return request({
+    url: "/admin/projects",
+    method: "get",
+  });
+}
+
+// 根据ID获取项目
+export function getProjectById(id: number): AxiosPromise<Project> {
+  return request({
+    url: `/admin/projects/${id}`,
+    method: "get",
+  });
+}
+
+// 创建项目
+export function createProject(data: ProjectData): AxiosPromise<Project> {
+  return request({
+    url: "/admin/projects",
+    method: "post",
+    data,
+  });
+}
+
+// 更新项目
+export function updateProject(
+  id: number,
+  data: ProjectData,
+): AxiosPromise<Project> {
+  return request({
+    url: `/admin/projects/${id}`,
+    method: "put",
+    data,
+  });
+}
+
+// 删除项目
+export function deleteProject(id: number): AxiosPromise {
+  return request({
+    url: `/admin/projects/${id}`,
+    method: "delete",
+  });
+}

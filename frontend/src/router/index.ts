@@ -48,6 +48,7 @@ const routes: RouteRecordRaw[] = [
       // 测试管理
       {
         path: "test",
+        redirect: "/admin/test/overview",
         children: [
           {
             path: "overview",
@@ -73,6 +74,7 @@ const routes: RouteRecordRaw[] = [
       // 系统管理
       {
         path: "system",
+        redirect: "/admin/system/api-keys",
         children: [
           {
             path: "api-keys",
@@ -98,6 +100,7 @@ const routes: RouteRecordRaw[] = [
       // 监控中心
       {
         path: "monitor",
+        redirect: "/admin/monitor/system",
         children: [
           {
             path: "system",
@@ -117,6 +120,7 @@ const routes: RouteRecordRaw[] = [
       // 系统设置
       {
         path: "settings",
+        redirect: "/admin/settings/profile",
         children: [
           {
             path: "profile",

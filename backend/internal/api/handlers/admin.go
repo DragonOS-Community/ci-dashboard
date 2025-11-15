@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
@@ -251,4 +252,115 @@ func GetDashboardTrend(c *gin.Context) {
 	}
 
 	response.Success(c, trendData)
+}
+
+// GetProjects 获取项目列表
+func GetProjects(c *gin.Context) {
+	projects, err := services.ListProjects()
+	if err != nil {
+		response.InternalServerError(c, "Failed to get projects")
+		return
+	}
+
+	response.Success(c, projects)
+}
+
+// GetProjectByID 根据ID获取项目
+func GetProjectByID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid project ID")
+		return
+	}
+
+	project, err := services.GetProjectByID(id)
+	if err != nil {
+		response.NotFound(c, "Project not found")
+		return
+	}
+
+	response.Success(c, project)
+}
+
+// CreateProject 创建项目
+func CreateProject(c *gin.Context) {
+	var req struct {
+		Name        string `json:"name" binding:"required"`
+		Description string `json:"description"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	project, err := services.CreateProject(req.Name, req.Description)
+	if err != nil {
+		if errors.Is(err, services.ErrProjectExists) {
+			response.BadRequest(c, err.Error())
+			return
+		}
+		response.InternalServerError(c, "Failed to create project")
+		return
+	}
+
+	response.Success(c, project)
+}
+
+// UpdateProject 更新项目
+func UpdateProject(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid project ID")
+		return
+	}
+
+	var req struct {
+		Name        string `json:"name" binding:"required"`
+		Description string `json:"description"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	project, err := services.UpdateProject(id, req.Name, req.Description)
+	if err != nil {
+		if errors.Is(err, services.ErrProjectExists) {
+			response.BadRequest(c, err.Error())
+			return
+		}
+		if errors.Is(err, services.ErrProjectNotFound) {
+			response.NotFound(c, "Project not found")
+			return
+		}
+		response.InternalServerError(c, "Failed to update project")
+		return
+	}
+
+	response.Success(c, project)
+}
+
+// DeleteProject 删除项目
+func DeleteProject(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid project ID")
+		return
+	}
+
+	if err := services.DeleteProject(id); err != nil {
+		if errors.Is(err, services.ErrProjectNotFound) {
+			response.NotFound(c, "Project not found")
+			return
+		}
+		response.InternalServerError(c, "Failed to delete project")
+		return
+	}
+
+	response.Success(c, nil)
 }
