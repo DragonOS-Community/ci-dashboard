@@ -19,63 +19,71 @@
       <div class="content-wrapper">
         <!-- 页面标题 -->
         <div class="page-header">
-          <h1>测试运行列表</h1>
-          <p class="page-description">查看所有测试运行记录和状态</p>
+          <h1>DragonOS CI Dashboard</h1>
+          <p class="page-description">实时查看DragonOS项目的CI测试结果和状态</p>
+        </div>
+
+        <!-- Master分支统计卡片 -->
+        <div class="stats-card-wrapper">
+          <MasterStatsCard ref="masterStatsCard" />
         </div>
 
         <!-- 筛选卡片 -->
         <div class="filter-card">
           <t-card>
-            <div class="filter-header">
-              <h3>筛选条件</h3>
-              <t-button variant="text" @click="handleReset">
-                <t-icon name="refresh" />
-                重置
-              </t-button>
-            </div>
             <t-form :data="testRunStore.filters" @submit="handleSearch" class="filter-form">
-              <t-row :gutter="16">
-                <t-col :span="6">
-                  <t-form-item label="分支名">
+              <div class="filter-content">
+                <div class="filter-fields">
+                  <t-form-item label="分支名称" class="filter-item">
                     <t-input
                       v-model="testRunStore.filters.branch"
-                      placeholder="输入分支名"
+                      placeholder="例如：main、develop"
                       clearable
-                      prefix-icon="search"
+                      class="filter-input"
                     />
                   </t-form-item>
-                </t-col>
-                <t-col :span="6">
-                  <t-form-item label="Commit ID">
+                  <t-form-item label="提交哈希" class="filter-item">
                     <t-input
                       v-model="testRunStore.filters.commitId"
-                      placeholder="输入Commit ID"
+                      placeholder="输入Commit哈希值"
                       clearable
-                      prefix-icon="code"
+                      class="filter-input"
                     />
                   </t-form-item>
-                </t-col>
-                <t-col :span="6">
-                  <t-form-item label="状态">
-                    <t-select v-model="testRunStore.filters.status" clearable placeholder="选择状态">
-                      <t-option value="all" label="全部" />
+                  <t-form-item label="测试状态" class="filter-item">
+                    <t-select 
+                      v-model="testRunStore.filters.status" 
+                      clearable 
+                      placeholder="选择状态"
+                      class="filter-select"
+                    >
+                      <t-option value="all" label="全部状态" />
                       <t-option value="passed" label="通过" />
                       <t-option value="failed" label="失败" />
                       <t-option value="running" label="运行中" />
                     </t-select>
                   </t-form-item>
-                </t-col>
-                <t-col :span="6">
-                  <t-form-item>
-                    <t-space>
-                      <t-button theme="warning" type="submit">
-                        <t-icon name="search" />
-                        搜索
-                      </t-button>
-                    </t-space>
-                  </t-form-item>
-                </t-col>
-              </t-row>
+                </div>
+                <div class="filter-actions">
+                  <t-button 
+                    theme="warning" 
+                    type="submit"
+                    class="search-btn"
+                  >
+                    <t-icon name="search" />
+                    搜索
+                  </t-button>
+                  <t-button 
+                    variant="outline" 
+                    theme="default"
+                    @click="handleReset"
+                    class="reset-btn"
+                  >
+                    <t-icon name="refresh" />
+                    重置
+                  </t-button>
+                </div>
+              </div>
             </t-form>
           </t-card>
         </div>
@@ -88,10 +96,16 @@
                 <h3>测试运行记录</h3>
                 <span class="list-count">共 {{ testRunStore.total }} 条记录</span>
               </div>
-              <t-button variant="text" theme="warning" @click="exportData">
-                <t-icon name="download" />
-                导出
-              </t-button>
+              <t-space>
+                <t-button variant="outline" theme="default" @click="refreshData">
+                  <t-icon name="refresh" />
+                  刷新
+                </t-button>
+                <t-button variant="text" theme="warning" @click="exportData">
+                  <t-icon name="download" />
+                  导出
+                </t-button>
+              </t-space>
             </div>
 
             <t-loading :loading="testRunStore.loading">
@@ -103,24 +117,49 @@
                 @page-size-change="handlePageSizeChange"
                 hover
                 row-key="id"
+                :empty="emptyConfig"
               >
+                <template #branch_name="{ row }">
+                  <div class="branch-cell">
+                    <t-icon name="code-branch" />
+                    <span>{{ row.branch_name }}</span>
+                  </div>
+                </template>
+                <template #commit_short_id="{ row }">
+                  <div class="commit-cell">
+                    <t-icon name="commit" />
+                    <code>{{ row.commit_short_id }}</code>
+                  </div>
+                </template>
+                <template #test_type="{ row }">
+                  <t-tag theme="primary" variant="light" shape="round">
+                    {{ row.test_type }}
+                  </t-tag>
+                </template>
                 <template #status="{ row }">
                   <t-tag
                     :theme="getStatusTheme(row.status)"
                     variant="light"
-                    :shape="'rounded'"
+                    shape="round"
                   >
                     <t-icon :name="getStatusIcon(row.status)" />
                     {{ getStatusText(row.status) }}
                   </t-tag>
                 </template>
+                <template #created_at="{ row }">
+                  <div class="time-cell">
+                    {{ formatTime(row.created_at) }}
+                  </div>
+                </template>
                 <template #operation="{ row }">
                   <t-button
                     variant="text"
                     theme="warning"
+                    size="small"
                     @click="viewDetail(row.id)"
                   >
                     查看详情
+                    <t-icon name="chevron-right" />
                   </t-button>
                 </template>
               </t-table>
@@ -133,23 +172,30 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTestRunStore } from '@/stores/testRun'
 import { MessagePlugin } from 'tdesign-vue-next'
+import MasterStatsCard from '@/components/MasterStatsCard.vue'
 
 const router = useRouter()
 const testRunStore = useTestRunStore()
+const masterStatsCard = ref(null)
 
 const columns = [
   { colKey: 'id', title: 'ID', width: 80 },
   { colKey: 'branch_name', title: '分支名', width: 150 },
-  { colKey: 'commit_short_id', title: 'Commit ID', width: 120 },
-  { colKey: 'test_type', title: '测试类型', width: 100 },
-  { colKey: 'status', title: '状态', width: 100 },
-  { colKey: 'created_at', title: '创建时间', width: 180 },
-  { colKey: 'operation', title: '操作', width: 100, fixed: 'right' },
+  { colKey: 'commit_short_id', title: 'Commit ID', width: 140 },
+  { colKey: 'test_type', title: '测试类型', width: 120 },
+  { colKey: 'status', title: '状态', width: 120 },
+  { colKey: 'created_at', title: '创建时间', width: 200 },
+  { colKey: 'operation', title: '操作', width: 120, fixed: 'right' },
 ]
+
+const emptyConfig = {
+  description: '暂无测试运行记录',
+  icon: 'inbox',
+}
 
 const paginationConfig = computed(() => ({
   current: testRunStore.pagination.page,
@@ -219,7 +265,27 @@ const getStatusIcon = (status) => {
 
 const exportData = () => {
   // 导出功能待实现
-  console.log('导出数据')
+  MessagePlugin.info('导出功能开发中...')
+}
+
+const refreshData = () => {
+  testRunStore.fetchTestRuns()
+  if (masterStatsCard.value) {
+    masterStatsCard.value.refresh()
+  }
+  MessagePlugin.success('数据已刷新')
+}
+
+const formatTime = (timeStr) => {
+  const date = new Date(timeStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
 }
 
 onMounted(() => {
@@ -304,6 +370,11 @@ onMounted(() => {
   color: #6b7280;
 }
 
+/* 统计卡片 */
+.stats-card-wrapper {
+  margin-bottom: 32px;
+}
+
 /* 卡片样式 */
 .filter-card,
 .list-card {
@@ -316,6 +387,12 @@ onMounted(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: none;
   overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.filter-card :deep(.t-card:hover),
+.list-card :deep(.t-card:hover) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .filter-card :deep(.t-card__body),
@@ -324,22 +401,93 @@ onMounted(() => {
 }
 
 /* 筛选区域 */
-.filter-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.filter-header h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
+.filter-form {
   margin: 0;
 }
 
-.filter-form {
-  margin-top: 16px;
+.filter-content {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.filter-fields {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  flex: 1;
+  min-width: 200px;
+  margin-bottom: 0;
+}
+
+.filter-item :deep(.t-form-item__label) {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.filter-input,
+.filter-select {
+  width: 100%;
+}
+
+.filter-input :deep(.t-input),
+.filter-select :deep(.t-select) {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.filter-input :deep(.t-input:hover),
+.filter-select :deep(.t-select:hover) {
+  border-color: #f59e0b;
+}
+
+.filter-input :deep(.t-input--focused),
+.filter-select :deep(.t-select--focused) {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.search-btn {
+  min-width: 100px;
+  height: 40px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.search-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.reset-btn {
+  min-width: 100px;
+  height: 40px;
+  border-radius: 8px;
+  font-weight: 500;
+  border-color: #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.reset-btn:hover {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
 }
 
 /* 列表头部 */
@@ -374,17 +522,45 @@ onMounted(() => {
 }
 
 :deep(.t-table th) {
-  background-color: #f9fafb;
+  background-color: #fafafa;
   font-weight: 600;
   color: #374151;
+  font-size: 14px;
 }
 
 :deep(.t-table td) {
   border-bottom: 1px solid #f3f4f6;
+  padding: 16px;
 }
 
 :deep(.t-table tr:hover td) {
-  background-color: #fef3c7;
+  background-color: #fef9f3;
+}
+
+.branch-cell,
+.commit-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.branch-cell span {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.commit-cell code {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 13px;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #1f2937;
+}
+
+.time-cell {
+  color: #6b7280;
+  font-size: 13px;
 }
 
 /* 状态标签 */
@@ -416,7 +592,31 @@ onMounted(() => {
     padding: 16px;
   }
 
-  .filter-header,
+  .filter-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .filter-fields {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .filter-item {
+    min-width: 100%;
+  }
+
+  .filter-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .search-btn,
+  .reset-btn {
+    flex: 1;
+  }
+
   .list-header {
     flex-direction: column;
     gap: 16px;

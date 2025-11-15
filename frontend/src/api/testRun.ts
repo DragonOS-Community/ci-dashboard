@@ -86,6 +86,31 @@ export function downloadFile(testRunId: string, fileId: string): AxiosPromise<Bl
   })
 }
 
+// Master分支统计数据接口
+export interface MasterBranchStats {
+  test_run_id: number
+  branch_name: string
+  commit_id: string
+  commit_short_id: string
+  test_type: string
+  status: string
+  created_at: string
+  total_cases: number
+  passed_cases: number
+  failed_cases: number
+  skipped_cases: number
+  pass_rate: number
+  duration: number
+}
+
+// 获取master分支最新测试统计数据
+export function getMasterBranchStats(): AxiosPromise<MasterBranchStats> {
+  return request({
+    url: '/stats/master',
+    method: 'get',
+  })
+}
+
 // 上传文件（需要API Key）
 export function uploadFile(testRunId: string, file: File): AxiosPromise {
   const formData = new FormData()

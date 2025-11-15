@@ -101,6 +101,17 @@ func GetTestCasesByTestRunID(c *gin.Context) {
 	response.Success(c, testCases)
 }
 
+// GetMasterBranchStats 获取master分支最新测试统计数据（公开接口）
+func GetMasterBranchStats(c *gin.Context) {
+	stats, err := services.GetMasterBranchLatestStats()
+	if err != nil {
+		response.NotFound(c, "No test run found for master branch")
+		return
+	}
+
+	response.Success(c, stats)
+}
+
 // CreateTestRun 创建测试运行（受保护接口）
 func CreateTestRun(c *gin.Context) {
 	var req struct {

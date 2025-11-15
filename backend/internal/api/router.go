@@ -40,6 +40,7 @@ func SetupRouter() *gin.Engine {
 		public.GET("/test-runs/:id/test-cases", handlers.GetTestCasesByTestRunID)
 		public.GET("/test-runs/:id/files", handlers.GetFilesByTestRunID)
 		public.GET("/test-runs/:id/output-files/:fileId", handlers.GetFileByID)
+		public.GET("/stats/master", handlers.GetMasterBranchStats)
 	}
 
 	// 受保护接口（需要API Key）
