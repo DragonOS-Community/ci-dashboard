@@ -107,10 +107,6 @@
                   <t-icon name="refresh" />
                   刷新
                 </t-button>
-                <t-button variant="text" theme="warning" @click="exportData">
-                  <t-icon name="download" />
-                  导出
-                </t-button>
               </t-space>
             </div>
 
@@ -267,11 +263,6 @@ const getStatusIcon = (status) => {
     cancelled: "stop-circle",
   };
   return icons[status] || "question-circle";
-};
-
-const exportData = () => {
-  // 导出功能待实现
-  MessagePlugin.info("导出功能开发中...");
 };
 
 const refreshData = () => {
