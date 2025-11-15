@@ -36,11 +36,7 @@
           </t-radio-group>
         </div>
         <div class="chart-container">
-          <!-- 这里放置图表组件，可以使用 ECharts 或其他图表库 -->
-          <div class="chart-placeholder">
-            <div class="chart-line"></div>
-            <div class="chart-area"></div>
-          </div>
+          <div ref="trendChartRef" class="trend-chart"></div>
         </div>
       </div>
 
@@ -54,21 +50,21 @@
         </div>
         <div class="chart-container">
           <div class="success-rate">
-            <div class="rate-circle">
-              <div class="rate-value">{{ successRate }}%</div>
+            <div class="rate-circle" :style="getRateCircleStyle()">
+              <div class="rate-value">{{ successRate.toFixed(1) }}%</div>
             </div>
             <div class="rate-details">
               <div class="rate-item">
                 <span class="dot success"></span>
-                <span>成功: {{ successCount }}</span>
+                <span>成功: {{ formatNumber(successCount) }}</span>
               </div>
               <div class="rate-item">
                 <span class="dot failed"></span>
-                <span>失败: {{ failedCount }}</span>
+                <span>失败: {{ formatNumber(failedCount) }}</span>
               </div>
               <div class="rate-item">
                 <span class="dot skipped"></span>
-                <span>跳过: {{ skippedCount }}</span>
+                <span>跳过: {{ formatNumber(skippedCount) }}</span>
               </div>
             </div>
           </div>
@@ -89,12 +85,12 @@
           :data="recentTests"
           :columns="tableColumns"
           hover
-          :pagination="false"
+          row-key="id"
           size="medium"
         >
           <template #status="{ row }">
             <t-tag :theme="getStatusTheme(row.status)" variant="light">
-              {{ row.status }}
+              {{ formatStatus(row.status) }}
             </t-tag>
           </template>
           <template #operation="{ row }">
@@ -129,76 +125,385 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import {
+  ref,
+  onMounted,
+  computed,
+  watch,
+  nextTick,
+  onBeforeUnmount,
+} from "vue";
 import { useRouter } from "vue-router";
 import { useTestRunStore } from "@/stores/testRun";
+import { getDashboardStats, getDashboardTrend } from "@/api/admin";
+import { MessagePlugin } from "tdesign-vue-next";
+import * as echarts from "echarts";
 
 const router = useRouter();
 const testRunStore = useTestRunStore();
 
 const trendPeriod = ref("7d");
+const loading = ref(false);
+const trendData = ref([]);
+const trendChartRef = ref(null);
+let trendChart = null;
+
+// 保存resize事件处理函数，以便后续移除
+const handleResize = () => {
+  if (trendChart) {
+    trendChart.resize();
+  }
+};
 
 // 统计数据
 const stats = ref([
   {
     key: "total",
     label: "总测试数",
-    value: "1,234",
+    value: "0",
     icon: "chart",
     color: "#f59e0b",
     bgColor: "#fef3c7",
     trend: {
       type: "up",
       icon: "arrow-up",
-      text: "12.5%",
+      text: "0%",
     },
   },
   {
     key: "today",
     label: "今日运行",
-    value: "56",
+    value: "0",
     icon: "play-circle",
     color: "#10b981",
     bgColor: "#d1fae5",
     trend: {
       type: "up",
       icon: "arrow-up",
-      text: "8.2%",
+      text: "0%",
     },
   },
   {
     key: "success",
     label: "成功率",
-    value: "98.5%",
+    value: "0%",
     icon: "check-circle",
     color: "#10b981",
     bgColor: "#d1fae5",
     trend: {
       type: "up",
       icon: "arrow-up",
-      text: "2.1%",
+      text: "0%",
     },
   },
   {
     key: "avgTime",
     label: "平均耗时",
-    value: "15.3m",
+    value: "0s",
     icon: "time",
     color: "#3b82f6",
     bgColor: "#dbeafe",
     trend: {
       type: "down",
       icon: "arrow-down",
-      text: "5.3%",
+      text: "0%",
     },
   },
 ]);
 
 // 成功率相关
-const successRate = ref(98.5);
-const successCount = ref(1215);
-const failedCount = ref(19);
-const skippedCount = ref(5);
+const successRate = ref(0);
+const successCount = ref(0);
+const failedCount = ref(0);
+const skippedCount = ref(0);
+
+// 格式化数字
+const formatNumber = (num) => {
+  return num.toLocaleString("zh-CN");
+};
+
+// 格式化时间（秒转分钟）
+const formatDuration = (seconds) => {
+  if (seconds < 60) {
+    return `${Math.round(seconds)}s`;
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return secs > 0 ? `${minutes}m ${secs}s` : `${minutes}m`;
+  } else {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+};
+
+// 计算趋势百分比
+const calculateTrend = (current, previous) => {
+  if (previous === 0) {
+    return { type: "up", text: current > 0 ? "100%" : "0%" };
+  }
+  const change = ((current - previous) / previous) * 100;
+  if (Math.abs(change) < 0.01) {
+    return { type: "up", text: "0%" };
+  }
+  const type = change > 0 ? "up" : "down";
+  const text = `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
+  return { type, text };
+};
+
+// 加载仪表板数据
+const loadDashboardData = async () => {
+  loading.value = true;
+  try {
+    // 加载统计数据
+    const statsRes = await getDashboardStats();
+    const dashboardStats = statsRes.data;
+
+    // 更新统计卡片
+    const totalTrend = calculateTrend(
+      dashboardStats.total_tests,
+      dashboardStats.total_tests_prev,
+    );
+    const todayTrend = calculateTrend(
+      dashboardStats.today_runs,
+      dashboardStats.today_runs_prev,
+    );
+    const successTrend = calculateTrend(
+      dashboardStats.success_rate,
+      dashboardStats.success_rate_prev,
+    );
+    const durationTrend = calculateTrend(
+      dashboardStats.avg_duration,
+      dashboardStats.avg_duration_prev,
+    );
+
+    stats.value = [
+      {
+        key: "total",
+        label: "总测试数",
+        value: formatNumber(dashboardStats.total_tests),
+        icon: "chart",
+        color: "#f59e0b",
+        bgColor: "#fef3c7",
+        trend: {
+          type: totalTrend.type,
+          icon: totalTrend.type === "up" ? "arrow-up" : "arrow-down",
+          text: totalTrend.text,
+        },
+      },
+      {
+        key: "today",
+        label: "今日运行",
+        value: formatNumber(dashboardStats.today_runs),
+        icon: "play-circle",
+        color: "#10b981",
+        bgColor: "#d1fae5",
+        trend: {
+          type: todayTrend.type,
+          icon: todayTrend.type === "up" ? "arrow-up" : "arrow-down",
+          text: todayTrend.text,
+        },
+      },
+      {
+        key: "success",
+        label: "成功率",
+        value: `${dashboardStats.success_rate.toFixed(1)}%`,
+        icon: "check-circle",
+        color: "#10b981",
+        bgColor: "#d1fae5",
+        trend: {
+          type: successTrend.type,
+          icon: successTrend.type === "up" ? "arrow-up" : "arrow-down",
+          text: successTrend.text,
+        },
+      },
+      {
+        key: "avgTime",
+        label: "平均耗时",
+        value: formatDuration(dashboardStats.avg_duration),
+        icon: "time",
+        color: "#3b82f6",
+        bgColor: "#dbeafe",
+        trend: {
+          type: durationTrend.type,
+          icon: durationTrend.type === "up" ? "arrow-up" : "arrow-down",
+          text: durationTrend.text,
+        },
+      },
+    ];
+
+    // 更新成功率相关数据
+    successRate.value = dashboardStats.success_rate;
+    successCount.value = dashboardStats.success_count;
+    failedCount.value = dashboardStats.failed_count;
+    skippedCount.value = dashboardStats.skipped_count;
+  } catch (error) {
+    console.error("Failed to load dashboard stats:", error);
+    MessagePlugin.error("加载仪表板数据失败");
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 初始化趋势图表
+const initTrendChart = () => {
+  if (!trendChartRef.value) return;
+
+  if (trendChart) {
+    trendChart.dispose();
+  }
+
+  trendChart = echarts.init(trendChartRef.value);
+
+  // 设置默认配置
+  const option = {
+    grid: {
+      left: "3%",
+      right: "4%",
+      bottom: "3%",
+      top: "10%",
+      containLabel: true,
+    },
+    xAxis: {
+      type: "category",
+      boundaryGap: false,
+      data: [],
+      axisLine: {
+        lineStyle: {
+          color: "#E5E7EB",
+        },
+      },
+      axisLabel: {
+        color: "#6B7280",
+        fontSize: 12,
+      },
+    },
+    yAxis: {
+      type: "value",
+      axisLine: {
+        lineStyle: {
+          color: "#E5E7EB",
+        },
+      },
+      axisLabel: {
+        color: "#6B7280",
+        fontSize: 12,
+      },
+      splitLine: {
+        lineStyle: {
+          color: "#F3F4F6",
+        },
+      },
+    },
+    series: [
+      {
+        name: "测试运行数",
+        type: "line",
+        smooth: true,
+        data: [],
+        itemStyle: {
+          color: "#F59E0B",
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            {
+              offset: 0,
+              color: "rgba(245, 158, 11, 0.3)",
+            },
+            {
+              offset: 1,
+              color: "rgba(245, 158, 11, 0.05)",
+            },
+          ]),
+        },
+        lineStyle: {
+          width: 2,
+          color: "#F59E0B",
+        },
+      },
+    ],
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "rgba(255, 255, 255, 0.95)",
+      borderColor: "#E5E7EB",
+      borderWidth: 1,
+      textStyle: {
+        color: "#1F2937",
+      },
+      axisPointer: {
+        type: "line",
+        lineStyle: {
+          color: "#F59E0B",
+        },
+      },
+    },
+  };
+
+  trendChart.setOption(option);
+
+  // 响应式调整
+  window.addEventListener("resize", handleResize);
+};
+
+// 更新趋势图表数据
+const updateTrendChart = () => {
+  if (!trendChart || !trendData.value || trendData.value.length === 0) {
+    return;
+  }
+
+  // 格式化日期
+  const dates = trendData.value.map((item) => {
+    const date = new Date(item.date);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}/${day}`;
+  });
+
+  const counts = trendData.value.map((item) => item.count);
+
+  trendChart.setOption({
+    xAxis: {
+      data: dates,
+    },
+    series: [
+      {
+        data: counts,
+      },
+    ],
+  });
+};
+
+// 加载趋势数据
+const loadTrendData = async () => {
+  const days =
+    trendPeriod.value === "7d" ? 7 : trendPeriod.value === "30d" ? 30 : 90;
+  try {
+    const trendRes = await getDashboardTrend(days);
+    trendData.value = trendRes.data;
+    await nextTick();
+    updateTrendChart();
+  } catch (error) {
+    console.error("Failed to load trend data:", error);
+  }
+};
+
+// 监听趋势周期变化
+watch(
+  trendPeriod,
+  () => {
+    loadTrendData();
+  },
+  { immediate: false },
+);
+
+// 组件卸载时销毁图表
+onBeforeUnmount(() => {
+  if (trendChart) {
+    trendChart.dispose();
+    trendChart = null;
+  }
+  window.removeEventListener("resize", handleResize);
+});
 
 // 最近测试数据
 const recentTests = ref([
@@ -283,32 +588,91 @@ const quickActions = ref([
 
 const getStatusTheme = (status) => {
   const themes = {
-    success: "success",
+    passed: "success",
     failed: "danger",
     running: "warning",
     cancelled: "default",
+    success: "success", // 兼容旧数据
   };
   return themes[status] || "default";
+};
+
+// 格式化状态显示文本
+const formatStatus = (status) => {
+  const statusMap = {
+    passed: "成功",
+    failed: "失败",
+    running: "运行中",
+    cancelled: "已取消",
+  };
+  return statusMap[status] || status;
 };
 
 const viewDetail = (id) => {
   router.push(`/test-runs/${id}`);
 };
 
-onMounted(() => {
+// 计算成功率圆环样式
+const getRateCircleStyle = () => {
+  const total = successCount.value + failedCount.value + skippedCount.value;
+  if (total === 0) {
+    return {
+      background: "conic-gradient(#9ca3af 0% 100%)",
+    };
+  }
+  const successPercent = (successCount.value / total) * 100;
+  const failedPercent = (failedCount.value / total) * 100;
+  const skippedPercent = (skippedCount.value / total) * 100;
+
+  const successEnd = successPercent;
+  const failedEnd = successPercent + failedPercent;
+
+  return {
+    background: `conic-gradient(#10b981 0% ${successEnd}%, #ef4444 ${successEnd}% ${failedEnd}%, #9ca3af ${failedEnd}% 100%)`,
+  };
+};
+
+onMounted(async () => {
+  // 初始化图表
+  await nextTick();
+  initTrendChart();
+
+  // 加载仪表板数据
+  await loadDashboardData();
+  await loadTrendData();
+
   // 加载最近测试数据
-  testRunStore.fetchTestRuns({ limit: 10 }).then((data) => {
-    if (data?.items) {
-      recentTests.value = data.items.map((item) => ({
-        id: item.id,
-        branch: item.branch_name,
-        commitId: item.commit_short_id,
-        status: item.status,
-        duration: item.duration || "-",
-        startTime: item.created_at,
-      }));
+  try {
+    await testRunStore.fetchTestRuns();
+    if (testRunStore.testRuns && testRunStore.testRuns.length > 0) {
+      recentTests.value = testRunStore.testRuns.slice(0, 10).map((item) => {
+        // 格式化持续时间
+        let duration = "-";
+        if (item.completed_at && item.started_at) {
+          const start = new Date(item.started_at).getTime();
+          const end = new Date(item.completed_at).getTime();
+          const diff = Math.floor((end - start) / 1000);
+          duration = formatDuration(diff);
+        }
+
+        // 格式化状态（后端返回的是passed/failed/running/cancelled，前端显示需要映射）
+        let status = item.status;
+        // 保持原状态，getStatusTheme会处理映射
+
+        return {
+          id: item.id,
+          branch: item.branch_name || "-",
+          commitId:
+            item.commit_short_id || item.commit_id?.substring(0, 7) || "-",
+          status: status,
+          duration: duration,
+          startTime: item.created_at || "-",
+        };
+      });
     }
-  });
+  } catch (error) {
+    console.error("Failed to load recent tests:", error);
+  }
 });
 </script>
 
@@ -438,32 +802,9 @@ onMounted(() => {
   position: relative;
 }
 
-.chart-placeholder {
+.trend-chart {
   width: 100%;
   height: 100%;
-  background: #f9fafb;
-  border-radius: 8px;
-  position: relative;
-  overflow: hidden;
-}
-
-.chart-line {
-  position: absolute;
-  top: 50%;
-  left: 10%;
-  right: 10%;
-  height: 2px;
-  background: #f59e0b;
-  transform: translateY(-50%);
-}
-
-.chart-area {
-  position: absolute;
-  bottom: 0;
-  left: 10%;
-  right: 10%;
-  height: 60%;
-  background: linear-gradient(to top, #fef3c7 0%, transparent 100%);
 }
 
 /* 成功率样式 */
@@ -477,7 +818,6 @@ onMounted(() => {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: conic-gradient(#10b981 0% 98.5%, #ef4444 98.5% 100%);
   display: flex;
   align-items: center;
   justify-content: center;

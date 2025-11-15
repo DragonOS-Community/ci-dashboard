@@ -232,3 +232,208 @@ func GetMasterBranchLatestStats() (*MasterBranchStats, error) {
 
 	return stats, nil
 }
+
+// DashboardStats 仪表板统计数据
+type DashboardStats struct {
+	// 统计卡片数据
+	TotalTests      int64   `json:"total_tests"`       // 总测试数
+	TodayRuns       int64   `json:"today_runs"`        // 今日运行
+	SuccessRate     float64 `json:"success_rate"`      // 成功率
+	AvgDuration     float64 `json:"avg_duration"`      // 平均耗时（秒）
+	TotalTestsPrev  int64   `json:"total_tests_prev"`  // 上期总测试数（用于计算趋势）
+	TodayRunsPrev   int64   `json:"today_runs_prev"`   // 上期今日运行
+	SuccessRatePrev float64 `json:"success_rate_prev"` // 上期成功率
+	AvgDurationPrev float64 `json:"avg_duration_prev"` // 上期平均耗时
+
+	// 成功率统计
+	SuccessCount int64 `json:"success_count"` // 成功数
+	FailedCount  int64 `json:"failed_count"`  // 失败数
+	SkippedCount int64 `json:"skipped_count"` // 跳过数
+}
+
+// TrendData 趋势数据点
+type TrendData struct {
+	Date  string `json:"date"`  // 日期
+	Count int64  `json:"count"` // 数量
+}
+
+// GetDashboardStats 获取仪表板统计数据
+func GetDashboardStats() (*DashboardStats, error) {
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	todayEnd := todayStart.Add(24 * time.Hour)
+
+	// 昨天的时间范围（用于计算趋势）
+	yesterdayStart := todayStart.AddDate(0, 0, -1)
+	yesterdayEnd := todayStart
+
+	// 上周同期（7天前）
+	lastWeekStart := todayStart.AddDate(0, 0, -7)
+
+	stats := &DashboardStats{}
+
+	// 1. 总测试数（所有测试运行）
+	var totalTests int64
+	if err := models.DB.Model(&models.TestRun{}).Count(&totalTests).Error; err != nil {
+		return nil, fmt.Errorf("failed to count total tests: %w", err)
+	}
+	stats.TotalTests = totalTests
+
+	// 上期总测试数（7天前）
+	var totalTestsPrev int64
+	if err := models.DB.Model(&models.TestRun{}).
+		Where("created_at < ?", lastWeekStart).
+		Count(&totalTestsPrev).Error; err != nil {
+		return nil, fmt.Errorf("failed to count previous total tests: %w", err)
+	}
+	stats.TotalTestsPrev = totalTestsPrev
+
+	// 2. 今日运行
+	var todayRuns int64
+	if err := models.DB.Model(&models.TestRun{}).
+		Where("created_at >= ? AND created_at < ?", todayStart, todayEnd).
+		Count(&todayRuns).Error; err != nil {
+		return nil, fmt.Errorf("failed to count today runs: %w", err)
+	}
+	stats.TodayRuns = todayRuns
+
+	// 上期今日运行（昨天）
+	var todayRunsPrev int64
+	if err := models.DB.Model(&models.TestRun{}).
+		Where("created_at >= ? AND created_at < ?", yesterdayStart, yesterdayEnd).
+		Count(&todayRunsPrev).Error; err != nil {
+		return nil, fmt.Errorf("failed to count previous today runs: %w", err)
+	}
+	stats.TodayRunsPrev = todayRunsPrev
+
+	// 3. 成功率统计（所有已完成的测试运行）
+	var completedRuns []models.TestRun
+	if err := models.DB.Where("status IN (?)", []models.TestRunStatus{
+		models.TestRunStatusPassed,
+		models.TestRunStatusFailed,
+	}).Find(&completedRuns).Error; err != nil {
+		return nil, fmt.Errorf("failed to get completed runs: %w", err)
+	}
+
+	var successCount, failedCount int64
+	for _, run := range completedRuns {
+		if run.Status == models.TestRunStatusPassed {
+			successCount++
+		} else if run.Status == models.TestRunStatusFailed {
+			failedCount++
+		}
+	}
+
+	// 统计测例的成功/失败/跳过数
+	var totalSuccessCases, totalFailedCases, totalSkippedCases int64
+	if err := models.DB.Model(&models.TestCase{}).
+		Where("status = ?", models.TestCaseStatusPassed).
+		Count(&totalSuccessCases).Error; err != nil {
+		return nil, fmt.Errorf("failed to count success cases: %w", err)
+	}
+	if err := models.DB.Model(&models.TestCase{}).
+		Where("status = ?", models.TestCaseStatusFailed).
+		Count(&totalFailedCases).Error; err != nil {
+		return nil, fmt.Errorf("failed to count failed cases: %w", err)
+	}
+	if err := models.DB.Model(&models.TestCase{}).
+		Where("status = ?", models.TestCaseStatusSkipped).
+		Count(&totalSkippedCases).Error; err != nil {
+		return nil, fmt.Errorf("failed to count skipped cases: %w", err)
+	}
+
+	stats.SuccessCount = totalSuccessCases
+	stats.FailedCount = totalFailedCases
+	stats.SkippedCount = totalSkippedCases
+
+	// 计算成功率（基于测例）
+	totalCases := totalSuccessCases + totalFailedCases + totalSkippedCases
+	if totalCases > 0 {
+		stats.SuccessRate = float64(totalSuccessCases) / float64(totalCases) * 100.0
+	}
+
+	// 上期成功率（7天前的数据）
+	var prevSuccessCases, prevFailedCases, prevSkippedCases int64
+	var prevTestRuns []models.TestRun
+	if err := models.DB.Where("created_at < ? AND status IN (?)", lastWeekStart, []models.TestRunStatus{
+		models.TestRunStatusPassed,
+		models.TestRunStatusFailed,
+	}).Find(&prevTestRuns).Error; err == nil {
+		var prevRunIDs []uint64
+		for _, run := range prevTestRuns {
+			prevRunIDs = append(prevRunIDs, run.ID)
+		}
+		if len(prevRunIDs) > 0 {
+			models.DB.Model(&models.TestCase{}).
+				Where("test_run_id IN (?) AND status = ?", prevRunIDs, models.TestCaseStatusPassed).
+				Count(&prevSuccessCases)
+			models.DB.Model(&models.TestCase{}).
+				Where("test_run_id IN (?) AND status = ?", prevRunIDs, models.TestCaseStatusFailed).
+				Count(&prevFailedCases)
+			models.DB.Model(&models.TestCase{}).
+				Where("test_run_id IN (?) AND status = ?", prevRunIDs, models.TestCaseStatusSkipped).
+				Count(&prevSkippedCases)
+		}
+		prevTotalCases := prevSuccessCases + prevFailedCases + prevSkippedCases
+		if prevTotalCases > 0 {
+			stats.SuccessRatePrev = float64(prevSuccessCases) / float64(prevTotalCases) * 100.0
+		}
+	}
+
+	// 4. 平均耗时（所有已完成的测试运行的平均耗时）
+	var avgDurationResult struct {
+		AvgDuration float64
+	}
+	if err := models.DB.Model(&models.TestCase{}).
+		Select("COALESCE(AVG(duration_ms), 0) / 1000.0 as avg_duration").
+		Scan(&avgDurationResult).Error; err != nil {
+		return nil, fmt.Errorf("failed to calculate avg duration: %w", err)
+	}
+	stats.AvgDuration = avgDurationResult.AvgDuration
+
+	// 上期平均耗时
+	var avgDurationPrevResult struct {
+		AvgDuration float64
+	}
+	if err := models.DB.Model(&models.TestCase{}).
+		Joins("JOIN test_runs ON test_cases.test_run_id = test_runs.id").
+		Where("test_runs.created_at < ?", lastWeekStart).
+		Select("COALESCE(AVG(test_cases.duration_ms), 0) / 1000.0 as avg_duration").
+		Scan(&avgDurationPrevResult).Error; err == nil {
+		stats.AvgDurationPrev = avgDurationPrevResult.AvgDuration
+	}
+
+	return stats, nil
+}
+
+// GetDashboardTrend 获取仪表板趋势数据
+func GetDashboardTrend(days int) ([]TrendData, error) {
+	now := time.Now()
+	startDate := now.AddDate(0, 0, -days)
+
+	var results []struct {
+		Date  string
+		Count int64
+	}
+
+	// 根据数据库类型选择日期格式化函数
+	// MySQL使用DATE函数
+	if err := models.DB.Model(&models.TestRun{}).
+		Select("DATE(created_at) as date, COUNT(*) as count").
+		Where("created_at >= ?", startDate).
+		Group("DATE(created_at)").
+		Order("date ASC").
+		Scan(&results).Error; err != nil {
+		return nil, fmt.Errorf("failed to get trend data: %w", err)
+	}
+
+	trendData := make([]TrendData, 0, len(results))
+	for _, r := range results {
+		trendData = append(trendData, TrendData{
+			Date:  r.Date,
+			Count: r.Count,
+		})
+	}
+
+	return trendData, nil
+}

@@ -272,5 +272,3 @@ func readPassword(prompt string) string {
 	fmt.Println() // 换行
 	return strings.TrimSpace(string(bytePassword))
 }
-
-

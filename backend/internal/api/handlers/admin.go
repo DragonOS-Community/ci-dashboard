@@ -219,3 +219,36 @@ func UpdatePassword(c *gin.Context) {
 		"message": "Password updated successfully",
 	})
 }
+
+// GetDashboardStats 获取仪表板统计数据（管理接口）
+func GetDashboardStats(c *gin.Context) {
+	stats, err := services.GetDashboardStats()
+	if err != nil {
+		response.InternalServerError(c, "Failed to get dashboard stats")
+		return
+	}
+
+	response.Success(c, stats)
+}
+
+// GetDashboardTrend 获取仪表板趋势数据（管理接口）
+func GetDashboardTrend(c *gin.Context) {
+	daysStr := c.DefaultQuery("days", "7")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil || days <= 0 {
+		days = 7
+	}
+
+	// 限制天数范围
+	if days > 365 {
+		days = 365
+	}
+
+	trendData, err := services.GetDashboardTrend(days)
+	if err != nil {
+		response.InternalServerError(c, "Failed to get dashboard trend")
+		return
+	}
+
+	response.Success(c, trendData)
+}

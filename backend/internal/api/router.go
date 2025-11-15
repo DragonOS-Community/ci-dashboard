@@ -61,6 +61,9 @@ func SetupRouter() *gin.Engine {
 		// 个人面板接口
 		admin.GET("/profile", handlers.GetProfile)
 		admin.PUT("/profile/password", handlers.UpdatePassword)
+		// 仪表板接口
+		admin.GET("/dashboard/stats", handlers.GetDashboardStats)
+		admin.GET("/dashboard/trend", handlers.GetDashboardTrend)
 	}
 
 	// 公开的管理登录和注册接口（不需要认证）

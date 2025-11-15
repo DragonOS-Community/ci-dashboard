@@ -89,3 +89,41 @@ export function updatePassword(data: UpdatePasswordData): AxiosPromise {
     data,
   });
 }
+
+// 仪表板统计数据接口
+export interface DashboardStats {
+  total_tests: number;
+  today_runs: number;
+  success_rate: number;
+  avg_duration: number;
+  total_tests_prev: number;
+  today_runs_prev: number;
+  success_rate_prev: number;
+  avg_duration_prev: number;
+  success_count: number;
+  failed_count: number;
+  skipped_count: number;
+}
+
+// 趋势数据接口
+export interface TrendData {
+  date: string;
+  count: number;
+}
+
+// 获取仪表板统计数据
+export function getDashboardStats(): AxiosPromise<DashboardStats> {
+  return request({
+    url: "/admin/dashboard/stats",
+    method: "get",
+  });
+}
+
+// 获取仪表板趋势数据
+export function getDashboardTrend(days: number = 7): AxiosPromise<TrendData[]> {
+  return request({
+    url: "/admin/dashboard/trend",
+    method: "get",
+    params: { days },
+  });
+}
