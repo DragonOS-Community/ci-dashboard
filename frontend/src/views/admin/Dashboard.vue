@@ -98,7 +98,11 @@
             </t-tag>
           </template>
           <template #operation="{ row }">
-            <t-button variant="text" theme="primary" @click="viewDetail(row.id)">
+            <t-button
+              variant="text"
+              theme="primary"
+              @click="viewDetail(row.id)"
+            >
               查看详情
             </t-button>
           </template>
@@ -125,187 +129,187 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useTestRunStore } from '@/stores/testRun'
+import { ref, onMounted, computed } from "vue";
+import { useRouter } from "vue-router";
+import { useTestRunStore } from "@/stores/testRun";
 
-const router = useRouter()
-const testRunStore = useTestRunStore()
+const router = useRouter();
+const testRunStore = useTestRunStore();
 
-const trendPeriod = ref('7d')
+const trendPeriod = ref("7d");
 
 // 统计数据
 const stats = ref([
   {
-    key: 'total',
-    label: '总测试数',
-    value: '1,234',
-    icon: 'chart',
-    color: '#f59e0b',
-    bgColor: '#fef3c7',
+    key: "total",
+    label: "总测试数",
+    value: "1,234",
+    icon: "chart",
+    color: "#f59e0b",
+    bgColor: "#fef3c7",
     trend: {
-      type: 'up',
-      icon: 'arrow-up',
-      text: '12.5%'
-    }
+      type: "up",
+      icon: "arrow-up",
+      text: "12.5%",
+    },
   },
   {
-    key: 'today',
-    label: '今日运行',
-    value: '56',
-    icon: 'play-circle',
-    color: '#10b981',
-    bgColor: '#d1fae5',
+    key: "today",
+    label: "今日运行",
+    value: "56",
+    icon: "play-circle",
+    color: "#10b981",
+    bgColor: "#d1fae5",
     trend: {
-      type: 'up',
-      icon: 'arrow-up',
-      text: '8.2%'
-    }
+      type: "up",
+      icon: "arrow-up",
+      text: "8.2%",
+    },
   },
   {
-    key: 'success',
-    label: '成功率',
-    value: '98.5%',
-    icon: 'check-circle',
-    color: '#10b981',
-    bgColor: '#d1fae5',
+    key: "success",
+    label: "成功率",
+    value: "98.5%",
+    icon: "check-circle",
+    color: "#10b981",
+    bgColor: "#d1fae5",
     trend: {
-      type: 'up',
-      icon: 'arrow-up',
-      text: '2.1%'
-    }
+      type: "up",
+      icon: "arrow-up",
+      text: "2.1%",
+    },
   },
   {
-    key: 'avgTime',
-    label: '平均耗时',
-    value: '15.3m',
-    icon: 'time',
-    color: '#3b82f6',
-    bgColor: '#dbeafe',
+    key: "avgTime",
+    label: "平均耗时",
+    value: "15.3m",
+    icon: "time",
+    color: "#3b82f6",
+    bgColor: "#dbeafe",
     trend: {
-      type: 'down',
-      icon: 'arrow-down',
-      text: '5.3%'
-    }
-  }
-])
+      type: "down",
+      icon: "arrow-down",
+      text: "5.3%",
+    },
+  },
+]);
 
 // 成功率相关
-const successRate = ref(98.5)
-const successCount = ref(1215)
-const failedCount = ref(19)
-const skippedCount = ref(5)
+const successRate = ref(98.5);
+const successCount = ref(1215);
+const failedCount = ref(19);
+const skippedCount = ref(5);
 
 // 最近测试数据
 const recentTests = ref([
   {
     id: 1,
-    branch: 'main',
-    commitId: 'abc123',
-    status: 'success',
-    duration: '12m 30s',
-    startTime: '2024-01-01 10:00:00'
+    branch: "main",
+    commitId: "abc123",
+    status: "success",
+    duration: "12m 30s",
+    startTime: "2024-01-01 10:00:00",
   },
   {
     id: 2,
-    branch: 'dev',
-    commitId: 'def456',
-    status: 'failed',
-    duration: '8m 15s',
-    startTime: '2024-01-01 09:30:00'
+    branch: "dev",
+    commitId: "def456",
+    status: "failed",
+    duration: "8m 15s",
+    startTime: "2024-01-01 09:30:00",
   },
   {
     id: 3,
-    branch: 'feature/test',
-    commitId: 'ghi789',
-    status: 'running',
-    duration: '-',
-    startTime: '2024-01-01 11:00:00'
-  }
-])
+    branch: "feature/test",
+    commitId: "ghi789",
+    status: "running",
+    duration: "-",
+    startTime: "2024-01-01 11:00:00",
+  },
+]);
 
 const tableColumns = [
-  { colKey: 'id', title: 'ID', width: 80 },
-  { colKey: 'branch', title: '分支', width: 120 },
-  { colKey: 'commitId', title: 'Commit ID', width: 100 },
-  { colKey: 'status', title: '状态', width: 100 },
-  { colKey: 'duration', title: '执行时间', width: 120 },
-  { colKey: 'startTime', title: '开始时间', width: 180 },
-  { colKey: 'operation', title: '操作', width: 100, fixed: 'right' }
-]
+  { colKey: "id", title: "ID", width: 80 },
+  { colKey: "branch", title: "分支", width: 120 },
+  { colKey: "commitId", title: "Commit ID", width: 100 },
+  { colKey: "status", title: "状态", width: 100 },
+  { colKey: "duration", title: "执行时间", width: 120 },
+  { colKey: "startTime", title: "开始时间", width: 180 },
+  { colKey: "operation", title: "操作", width: 100, fixed: "right" },
+];
 
 // 快捷操作
 const quickActions = ref([
   {
-    key: 'newTest',
-    title: '创建测试任务',
-    description: '快速创建新的测试运行任务',
-    icon: 'add',
-    color: '#ffffff',
-    bgColor: '#f59e0b',
-    theme: 'warning',
-    buttonText: '立即创建',
+    key: "newTest",
+    title: "创建测试任务",
+    description: "快速创建新的测试运行任务",
+    icon: "add",
+    color: "#ffffff",
+    bgColor: "#f59e0b",
+    theme: "warning",
+    buttonText: "立即创建",
     handler: () => {
-      router.push('/admin/test/runs?action=new')
-    }
+      router.push("/admin/test/runs?action=new");
+    },
   },
   {
-    key: 'apiKey',
-    title: '管理 API 密钥',
-    description: '创建或管理 API 访问密钥',
-    icon: 'key',
-    color: '#ffffff',
-    bgColor: '#3b82f6',
-    theme: 'primary',
-    buttonText: '管理密钥',
+    key: "apiKey",
+    title: "管理 API 密钥",
+    description: "创建或管理 API 访问密钥",
+    icon: "key",
+    color: "#ffffff",
+    bgColor: "#3b82f6",
+    theme: "primary",
+    buttonText: "管理密钥",
     handler: () => {
-      router.push('/admin/system/api-keys')
-    }
+      router.push("/admin/system/api-keys");
+    },
   },
   {
-    key: 'report',
-    title: '生成测试报告',
-    description: '导出最近一段时间的测试报告',
-    icon: 'file-excel',
-    color: '#ffffff',
-    bgColor: '#10b981',
-    theme: 'success',
-    buttonText: '生成报告',
+    key: "report",
+    title: "生成测试报告",
+    description: "导出最近一段时间的测试报告",
+    icon: "file-excel",
+    color: "#ffffff",
+    bgColor: "#10b981",
+    theme: "success",
+    buttonText: "生成报告",
     handler: () => {
-      router.push('/admin/test/reports')
-    }
-  }
-])
+      router.push("/admin/test/reports");
+    },
+  },
+]);
 
 const getStatusTheme = (status) => {
   const themes = {
-    success: 'success',
-    failed: 'danger',
-    running: 'warning',
-    cancelled: 'default'
-  }
-  return themes[status] || 'default'
-}
+    success: "success",
+    failed: "danger",
+    running: "warning",
+    cancelled: "default",
+  };
+  return themes[status] || "default";
+};
 
 const viewDetail = (id) => {
-  router.push(`/test-runs/${id}`)
-}
+  router.push(`/test-runs/${id}`);
+};
 
 onMounted(() => {
   // 加载最近测试数据
-  testRunStore.fetchTestRuns({ limit: 10 }).then(data => {
+  testRunStore.fetchTestRuns({ limit: 10 }).then((data) => {
     if (data?.items) {
-      recentTests.value = data.items.map(item => ({
+      recentTests.value = data.items.map((item) => ({
         id: item.id,
         branch: item.branch_name,
         commitId: item.commit_short_id,
         status: item.status,
-        duration: item.duration || '-',
-        startTime: item.created_at
-      }))
+        duration: item.duration || "-",
+        startTime: item.created_at,
+      }));
     }
-  })
-})
+  });
+});
 </script>
 
 <style scoped>
@@ -481,7 +485,7 @@ onMounted(() => {
 }
 
 .rate-circle::before {
-  content: '';
+  content: "";
   position: absolute;
   width: 100px;
   height: 100px;

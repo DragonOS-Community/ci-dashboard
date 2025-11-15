@@ -1,14 +1,14 @@
 <template>
-  <t-card class="master-stats-card" :class="{ 'loading': loading }">
+  <t-card class="master-stats-card" :class="{ loading: loading }">
     <div class="stats-header">
       <div class="header-left">
         <div class="branch-badge">
           <t-icon name="code-branch" />
-          <span>{{ stats?.branch_name || 'master' }}</span>
+          <span>{{ stats?.branch_name || "master" }}</span>
         </div>
         <div class="test-type-badge">
           <t-icon name="file-code" />
-          <span>{{ stats?.test_type || 'gvisor' }} 系统调用测试</span>
+          <span>{{ stats?.test_type || "gvisor" }} 系统调用测试</span>
         </div>
       </div>
       <div class="header-right">
@@ -40,7 +40,9 @@
           <div class="metric-item pass-rate">
             <div class="metric-label">通过率</div>
             <div class="metric-value">
-              <span class="value-number">{{ formatPassRate(stats.pass_rate) }}</span>
+              <span class="value-number">{{
+                formatPassRate(stats.pass_rate)
+              }}</span>
               <span class="value-unit">%</span>
             </div>
             <div class="metric-progress">
@@ -56,7 +58,9 @@
           <div class="metric-item total-cases">
             <div class="metric-label">通过测例数</div>
             <div class="metric-value">
-              <span class="value-number">{{ formatNumber(stats.passed_cases) }}</span>
+              <span class="value-number">{{
+                formatNumber(stats.passed_cases)
+              }}</span>
             </div>
             <div class="metric-detail">
               <span class="detail-item">
@@ -76,7 +80,9 @@
           <div class="metric-item duration">
             <div class="metric-label">总耗时</div>
             <div class="metric-value">
-              <span class="value-number">{{ formatDuration(stats.duration) }}</span>
+              <span class="value-number">{{
+                formatDuration(stats.duration)
+              }}</span>
             </div>
           </div>
         </div>
@@ -122,122 +128,122 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { getMasterBranchStats } from '@/api/testRun'
-import type { MasterBranchStats } from '@/api/testRun'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { getMasterBranchStats } from "@/api/testRun";
+import type { MasterBranchStats } from "@/api/testRun";
 
-const router = useRouter()
-const stats = ref<MasterBranchStats | null>(null)
-const loading = ref(false)
-const hasNoData = ref(false)
+const router = useRouter();
+const stats = ref<MasterBranchStats | null>(null);
+const loading = ref(false);
+const hasNoData = ref(false);
 
-type TestRunStatus = 'passed' | 'failed' | 'running' | 'cancelled'
+type TestRunStatus = "passed" | "failed" | "running" | "cancelled";
 
 const getStatusTheme = (status: string): string => {
   const themes: Record<TestRunStatus, string> = {
-    passed: 'success',
-    failed: 'danger',
-    running: 'warning',
-    cancelled: 'default',
-  }
-  return themes[status as TestRunStatus] || 'default'
-}
+    passed: "success",
+    failed: "danger",
+    running: "warning",
+    cancelled: "default",
+  };
+  return themes[status as TestRunStatus] || "default";
+};
 
 const getStatusText = (status: string): string => {
   const texts: Record<TestRunStatus, string> = {
-    passed: '通过',
-    failed: '失败',
-    running: '运行中',
-    cancelled: '已取消',
-  }
-  return texts[status as TestRunStatus] || status
-}
+    passed: "通过",
+    failed: "失败",
+    running: "运行中",
+    cancelled: "已取消",
+  };
+  return texts[status as TestRunStatus] || status;
+};
 
 const getStatusIcon = (status: string): string => {
   const icons: Record<TestRunStatus, string> = {
-    passed: 'check-circle',
-    failed: 'close-circle',
-    running: 'time',
-    cancelled: 'stop-circle',
-  }
-  return icons[status as TestRunStatus] || 'question-circle'
-}
+    passed: "check-circle",
+    failed: "close-circle",
+    running: "time",
+    cancelled: "stop-circle",
+  };
+  return icons[status as TestRunStatus] || "question-circle";
+};
 
 const getPassRateTheme = (rate: number): string => {
-  if (rate >= 95) return 'success'
-  if (rate >= 80) return 'warning'
-  return 'danger'
-}
+  if (rate >= 95) return "success";
+  if (rate >= 80) return "warning";
+  return "danger";
+};
 
 const formatPassRate = (rate: number): string => {
-  return rate.toFixed(1)
-}
+  return rate.toFixed(1);
+};
 
 const formatNumber = (num: number): string => {
-  return num.toLocaleString()
-}
+  return num.toLocaleString();
+};
 
 const formatDuration = (ms: number): string => {
-  if (ms < 1000) return `${ms}ms`
-  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
-  const minutes = Math.floor(ms / 60000)
-  const seconds = Math.floor((ms % 60000) / 1000)
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
   if (minutes < 60) {
-    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`
+    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
   }
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
-}
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+};
 
 const formatTime = (timeStr: string): string => {
-  const date = new Date(timeStr)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+  const date = new Date(timeStr);
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 const viewDetail = () => {
   if (stats.value) {
-    router.push(`/test-runs/${stats.value.test_run_id}`)
+    router.push(`/test-runs/${stats.value.test_run_id}`);
   }
-}
+};
 
 const fetchStats = async () => {
-  loading.value = true
-  hasNoData.value = false
+  loading.value = true;
+  hasNoData.value = false;
   try {
-    const res = await getMasterBranchStats()
-    stats.value = res.data
-    hasNoData.value = false
+    const res = await getMasterBranchStats();
+    stats.value = res.data;
+    hasNoData.value = false;
   } catch (error: any) {
     // 静默处理 404 错误，显示友好的提示
     if (error?.response?.status === 404 || error?.response?.status === 400) {
-      stats.value = null
-      hasNoData.value = true
+      stats.value = null;
+      hasNoData.value = true;
     } else {
       // 其他错误也显示无数据提示，而不是错误信息
-      console.error('Failed to fetch master branch stats:', error)
-      stats.value = null
-      hasNoData.value = true
+      console.error("Failed to fetch master branch stats:", error);
+      stats.value = null;
+      hasNoData.value = true;
     }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 onMounted(() => {
-  fetchStats()
-})
+  fetchStats();
+});
 
 defineExpose({
   refresh: fetchStats,
-})
+});
 </script>
 
 <style scoped>
@@ -411,7 +417,7 @@ defineExpose({
 .footer-value {
   color: #1f2937;
   font-weight: 600;
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: "Monaco", "Menlo", monospace;
 }
 
 .no-data-content {
@@ -495,4 +501,3 @@ defineExpose({
   }
 }
 </style>
-

@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch } from "vue";
 
 const props = defineProps({
   testCases: {
@@ -31,17 +31,17 @@ const props = defineProps({
   },
   sortField: {
     type: String,
-    default: '',
+    default: "",
   },
   sortOrder: {
     type: String,
-    default: '',
+    default: "",
   },
-})
+});
 
-const emit = defineEmits(['sort-change'])
+const emit = defineEmits(["sort-change"]);
 
-const sortInfo = ref([])
+const sortInfo = ref([]);
 
 // 同步外部排序状态
 watch(
@@ -51,55 +51,54 @@ watch(
       sortInfo.value = [
         {
           sortBy: field,
-          descending: order === 'desc',
+          descending: order === "desc",
         },
-      ]
+      ];
     } else {
-      sortInfo.value = []
+      sortInfo.value = [];
     }
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 const columns = [
-  { 
-    colKey: 'name', 
-    title: '测例名称', 
-    width: 300, 
-    sortType: 'all',
-    sorter: true
+  {
+    colKey: "name",
+    title: "测例名称",
+    width: 300,
+    sortType: "all",
+    sorter: true,
   },
-  { colKey: 'status', title: '状态', width: 100 },
-  { 
-    colKey: 'duration_ms', 
-    title: '耗时(ms)', 
-    width: 120, 
-    sortType: 'all',
-    sorter: true
+  { colKey: "status", title: "状态", width: 100 },
+  {
+    colKey: "duration_ms",
+    title: "耗时(ms)",
+    width: 120,
+    sortType: "all",
+    sorter: true,
   },
-  { colKey: 'error_log', title: '错误日志', width: 150 },
-]
+  { colKey: "error_log", title: "错误日志", width: 150 },
+];
 
 const handleSortChange = (sortInfo) => {
-  emit('sort-change', sortInfo)
-}
+  emit("sort-change", sortInfo);
+};
 
 const getStatusTheme = (status) => {
   const themes = {
-    passed: 'success',
-    failed: 'danger',
-    skipped: 'default',
-  }
-  return themes[status] || 'default'
-}
+    passed: "success",
+    failed: "danger",
+    skipped: "default",
+  };
+  return themes[status] || "default";
+};
 
 const getStatusText = (status) => {
   const texts = {
-    passed: '通过',
-    failed: '失败',
-    skipped: '跳过',
-  }
-  return texts[status] || status
-}
+    passed: "通过",
+    failed: "失败",
+    skipped: "跳过",
+  };
+  return texts[status] || status;
+};
 </script>
-

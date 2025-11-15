@@ -5,14 +5,14 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive } from "vue";
 
 const globalConfig = reactive({
   calendar: {
     firstDayOfWeek: 1,
     fillWithZero: true,
   },
-})
+});
 </script>
 
 <style>
@@ -23,7 +23,9 @@ const globalConfig = reactive({
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -32,4 +34,3 @@ body {
   min-height: 100vh;
 }
 </style>
-

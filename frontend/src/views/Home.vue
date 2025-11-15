@@ -31,7 +31,11 @@
         <!-- 筛选卡片 -->
         <div class="filter-card">
           <t-card>
-            <t-form :data="testRunStore.filters" @submit="handleSearch" class="filter-form">
+            <t-form
+              :data="testRunStore.filters"
+              @submit="handleSearch"
+              class="filter-form"
+            >
               <div class="filter-content">
                 <div class="filter-fields">
                   <t-form-item label="分支名称" class="filter-item">
@@ -51,9 +55,9 @@
                     />
                   </t-form-item>
                   <t-form-item label="测试状态" class="filter-item">
-                    <t-select 
-                      v-model="testRunStore.filters.status" 
-                      clearable 
+                    <t-select
+                      v-model="testRunStore.filters.status"
+                      clearable
                       placeholder="选择状态"
                       class="filter-select"
                     >
@@ -65,16 +69,12 @@
                   </t-form-item>
                 </div>
                 <div class="filter-actions">
-                  <t-button 
-                    theme="warning" 
-                    type="submit"
-                    class="search-btn"
-                  >
+                  <t-button theme="warning" type="submit" class="search-btn">
                     <t-icon name="search" />
                     搜索
                   </t-button>
-                  <t-button 
-                    variant="outline" 
+                  <t-button
+                    variant="outline"
                     theme="default"
                     @click="handleReset"
                     class="reset-btn"
@@ -94,10 +94,16 @@
             <div class="list-header">
               <div class="list-title">
                 <h3>测试运行记录</h3>
-                <span class="list-count">共 {{ testRunStore.total }} 条记录</span>
+                <span class="list-count"
+                  >共 {{ testRunStore.total }} 条记录</span
+                >
               </div>
               <t-space>
-                <t-button variant="outline" theme="default" @click="refreshData">
+                <t-button
+                  variant="outline"
+                  theme="default"
+                  @click="refreshData"
+                >
                   <t-icon name="refresh" />
                   刷新
                 </t-button>
@@ -172,30 +178,30 @@
 </template>
 
 <script setup>
-import { onMounted, computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useTestRunStore } from '@/stores/testRun'
-import { MessagePlugin } from 'tdesign-vue-next'
-import MasterStatsCard from '@/components/MasterStatsCard.vue'
+import { onMounted, computed, ref } from "vue";
+import { useRouter } from "vue-router";
+import { useTestRunStore } from "@/stores/testRun";
+import { MessagePlugin } from "tdesign-vue-next";
+import MasterStatsCard from "@/components/MasterStatsCard.vue";
 
-const router = useRouter()
-const testRunStore = useTestRunStore()
-const masterStatsCard = ref(null)
+const router = useRouter();
+const testRunStore = useTestRunStore();
+const masterStatsCard = ref(null);
 
 const columns = [
-  { colKey: 'id', title: 'ID', width: 80 },
-  { colKey: 'branch_name', title: '分支名', width: 150 },
-  { colKey: 'commit_short_id', title: 'Commit ID', width: 140 },
-  { colKey: 'test_type', title: '测试类型', width: 120 },
-  { colKey: 'status', title: '状态', width: 120 },
-  { colKey: 'created_at', title: '创建时间', width: 200 },
-  { colKey: 'operation', title: '操作', width: 120, fixed: 'right' },
-]
+  { colKey: "id", title: "ID", width: 80 },
+  { colKey: "branch_name", title: "分支名", width: 150 },
+  { colKey: "commit_short_id", title: "Commit ID", width: 140 },
+  { colKey: "test_type", title: "测试类型", width: 120 },
+  { colKey: "status", title: "状态", width: 120 },
+  { colKey: "created_at", title: "创建时间", width: 200 },
+  { colKey: "operation", title: "操作", width: 120, fixed: "right" },
+];
 
 const emptyConfig = {
-  description: '暂无测试运行记录',
-  icon: 'inbox',
-}
+  description: "暂无测试运行记录",
+  icon: "inbox",
+};
 
 const paginationConfig = computed(() => ({
   current: testRunStore.pagination.page,
@@ -203,94 +209,94 @@ const paginationConfig = computed(() => ({
   total: testRunStore.total,
   showJumper: true,
   showSizer: true,
-}))
+}));
 
 const getStatusTheme = (status) => {
   const themes = {
-    passed: 'success',
-    failed: 'danger',
-    running: 'warning',
-    cancelled: 'default',
-  }
-  return themes[status] || 'default'
-}
+    passed: "success",
+    failed: "danger",
+    running: "warning",
+    cancelled: "default",
+  };
+  return themes[status] || "default";
+};
 
 const getStatusText = (status) => {
   const texts = {
-    passed: '通过',
-    failed: '失败',
-    running: '运行中',
-    cancelled: '已取消',
-  }
-  return texts[status] || status
-}
+    passed: "通过",
+    failed: "失败",
+    running: "运行中",
+    cancelled: "已取消",
+  };
+  return texts[status] || status;
+};
 
 const handleSearch = () => {
-  testRunStore.pagination.page = 1
-  testRunStore.fetchTestRuns()
-}
+  testRunStore.pagination.page = 1;
+  testRunStore.fetchTestRuns();
+};
 
 const handleReset = () => {
-  testRunStore.resetFilters()
-  testRunStore.fetchTestRuns()
-}
+  testRunStore.resetFilters();
+  testRunStore.fetchTestRuns();
+};
 
 const handlePageChange = (page) => {
-  testRunStore.setPagination(page, testRunStore.pagination.pageSize)
-  testRunStore.fetchTestRuns()
-}
+  testRunStore.setPagination(page, testRunStore.pagination.pageSize);
+  testRunStore.fetchTestRuns();
+};
 
 const handlePageSizeChange = (pageSize) => {
-  testRunStore.setPagination(1, pageSize)
-  testRunStore.fetchTestRuns()
-}
+  testRunStore.setPagination(1, pageSize);
+  testRunStore.fetchTestRuns();
+};
 
 const viewDetail = (id) => {
-  router.push(`/test-runs/${id}`)
-}
+  router.push(`/test-runs/${id}`);
+};
 
 const goToLogin = () => {
-  router.push('/admin/login')
-}
+  router.push("/admin/login");
+};
 
 const getStatusIcon = (status) => {
   const icons = {
-    passed: 'check-circle',
-    failed: 'close-circle',
-    running: 'time',
-    cancelled: 'stop-circle',
-  }
-  return icons[status] || 'question-circle'
-}
+    passed: "check-circle",
+    failed: "close-circle",
+    running: "time",
+    cancelled: "stop-circle",
+  };
+  return icons[status] || "question-circle";
+};
 
 const exportData = () => {
   // 导出功能待实现
-  MessagePlugin.info('导出功能开发中...')
-}
+  MessagePlugin.info("导出功能开发中...");
+};
 
 const refreshData = () => {
-  testRunStore.fetchTestRuns()
+  testRunStore.fetchTestRuns();
   if (masterStatsCard.value) {
-    masterStatsCard.value.refresh()
+    masterStatsCard.value.refresh();
   }
-  MessagePlugin.success('数据已刷新')
-}
+  MessagePlugin.success("数据已刷新");
+};
 
 const formatTime = (timeStr) => {
-  const date = new Date(timeStr)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-}
+  const date = new Date(timeStr);
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
 
 onMounted(() => {
-  testRunStore.fetchTestRuns()
-})
+  testRunStore.fetchTestRuns();
+});
 </script>
 
 <style scoped>
@@ -550,7 +556,7 @@ onMounted(() => {
 }
 
 .commit-cell code {
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: "Monaco", "Menlo", monospace;
   font-size: 13px;
   background: #f3f4f6;
   padding: 4px 8px;
@@ -624,4 +630,3 @@ onMounted(() => {
   }
 }
 </style>
-

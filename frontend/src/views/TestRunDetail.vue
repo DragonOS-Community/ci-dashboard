@@ -3,7 +3,7 @@
     <!-- 顶部导航 -->
     <header class="header">
       <div class="header-content">
-        <div class="logo" @click="goBack" style="cursor: pointer;">
+        <div class="logo" @click="goBack" style="cursor: pointer">
           <div class="logo-icon">🐉</div>
           <span class="logo-text">DragonOS CI Dashboard</span>
         </div>
@@ -20,17 +20,29 @@
         <!-- 页面标题和操作栏 -->
         <div class="page-header">
           <div class="page-header-left">
-            <t-button variant="text" theme="default" @click="goBack" class="back-btn">
+            <t-button
+              variant="text"
+              theme="default"
+              @click="goBack"
+              class="back-btn"
+            >
               <t-icon name="chevron-left" />
               返回列表
             </t-button>
             <div class="page-title">
               <h1>测试运行详情</h1>
-              <span v-if="testRunStore.currentTestRun" class="test-run-id">#{{ testRunStore.currentTestRun.id }}</span>
+              <span v-if="testRunStore.currentTestRun" class="test-run-id"
+                >#{{ testRunStore.currentTestRun.id }}</span
+              >
             </div>
           </div>
           <div class="page-header-actions">
-            <t-button variant="outline" theme="default" @click="refreshData" class="refresh-btn">
+            <t-button
+              variant="outline"
+              theme="default"
+              @click="refreshData"
+              class="refresh-btn"
+            >
               <t-icon name="refresh" />
               刷新
             </t-button>
@@ -49,7 +61,9 @@
                   shape="round"
                   class="status-tag"
                 >
-                  <t-icon :name="getStatusIcon(testRunStore.currentTestRun.status)" />
+                  <t-icon
+                    :name="getStatusIcon(testRunStore.currentTestRun.status)"
+                  />
                   {{ getStatusText(testRunStore.currentTestRun.status) }}
                 </t-tag>
               </div>
@@ -59,7 +73,9 @@
                     <t-icon name="code-branch" />
                     分支名称
                   </div>
-                  <div class="info-value">{{ testRunStore.currentTestRun.branch_name }}</div>
+                  <div class="info-value">
+                    {{ testRunStore.currentTestRun.branch_name }}
+                  </div>
                 </div>
                 <div class="info-item">
                   <div class="info-label">
@@ -95,21 +111,33 @@
                     <t-icon name="time" />
                     创建时间
                   </div>
-                  <div class="info-value">{{ formatTime(testRunStore.currentTestRun.created_at) }}</div>
+                  <div class="info-value">
+                    {{ formatTime(testRunStore.currentTestRun.created_at) }}
+                  </div>
                 </div>
-                <div class="info-item" v-if="testRunStore.currentTestRun.started_at">
+                <div
+                  class="info-item"
+                  v-if="testRunStore.currentTestRun.started_at"
+                >
                   <div class="info-label">
                     <t-icon name="play-circle" />
                     开始时间
                   </div>
-                  <div class="info-value">{{ formatTime(testRunStore.currentTestRun.started_at) }}</div>
+                  <div class="info-value">
+                    {{ formatTime(testRunStore.currentTestRun.started_at) }}
+                  </div>
                 </div>
-                <div class="info-item" v-if="testRunStore.currentTestRun.completed_at">
+                <div
+                  class="info-item"
+                  v-if="testRunStore.currentTestRun.completed_at"
+                >
                   <div class="info-label">
                     <t-icon name="check-circle" />
                     完成时间
                   </div>
-                  <div class="info-value">{{ formatTime(testRunStore.currentTestRun.completed_at) }}</div>
+                  <div class="info-value">
+                    {{ formatTime(testRunStore.currentTestRun.completed_at) }}
+                  </div>
                 </div>
               </div>
             </t-card>
@@ -145,11 +173,20 @@
               <div class="card-header">
                 <h2 class="card-title">测例列表</h2>
                 <t-tabs v-model="activeTab" class="filter-tabs">
-                  <t-tab-panel value="all" :label="`全部 (${allTestCases.length})`">
+                  <t-tab-panel
+                    value="all"
+                    :label="`全部 (${allTestCases.length})`"
+                  >
                   </t-tab-panel>
-                  <t-tab-panel value="passed" :label="`通过 (${passedTestCases.length})`">
+                  <t-tab-panel
+                    value="passed"
+                    :label="`通过 (${passedTestCases.length})`"
+                  >
                   </t-tab-panel>
-                  <t-tab-panel value="failed" :label="`失败 (${failedTestCases.length})`">
+                  <t-tab-panel
+                    value="failed"
+                    :label="`失败 (${failedTestCases.length})`"
+                  >
                   </t-tab-panel>
                 </t-tabs>
               </div>
@@ -185,7 +222,10 @@
                   class="empty-state"
                 />
               </div>
-              <div class="test-cases-pagination" v-if="filteredTestCases.length > pageSize">
+              <div
+                class="test-cases-pagination"
+                v-if="filteredTestCases.length > pageSize"
+              >
                 <t-pagination
                   v-model="currentPage"
                   :total="filteredTestCases.length"
@@ -204,18 +244,26 @@
             <t-card>
               <div class="card-header">
                 <h2 class="card-title">输出文件</h2>
-                <span class="file-count" v-if="files.length > 0">共 {{ files.length }} 个文件</span>
+                <span class="file-count" v-if="files.length > 0"
+                  >共 {{ files.length }} 个文件</span
+                >
               </div>
               <div class="files-content">
                 <t-list v-if="files.length > 0" class="file-list">
-                  <t-list-item v-for="file in files" :key="file.id" class="file-item">
+                  <t-list-item
+                    v-for="file in files"
+                    :key="file.id"
+                    class="file-item"
+                  >
                     <div class="file-info">
                       <div class="file-name">
                         <t-icon name="file" />
                         <span>{{ file.filename }}</span>
                       </div>
                       <div class="file-meta">
-                        <t-tag variant="light" size="small">{{ formatFileSize(file.size) }}</t-tag>
+                        <t-tag variant="light" size="small">{{
+                          formatFileSize(file.size)
+                        }}</t-tag>
                       </div>
                     </div>
                     <div class="file-actions">
@@ -243,247 +291,260 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useTestRunStore } from '@/stores/testRun'
-import { getTestCasesByTestRunId, getFilesByTestRunId, downloadFile as downloadFileAPI } from '@/api/testRun'
-import { MessagePlugin } from 'tdesign-vue-next'
-import TestCaseList from '@/components/TestCaseList.vue'
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useTestRunStore } from "@/stores/testRun";
+import {
+  getTestCasesByTestRunId,
+  getFilesByTestRunId,
+  downloadFile as downloadFileAPI,
+} from "@/api/testRun";
+import { MessagePlugin } from "tdesign-vue-next";
+import TestCaseList from "@/components/TestCaseList.vue";
 
-const route = useRoute()
-const router = useRouter()
-const testRunStore = useTestRunStore()
+const route = useRoute();
+const router = useRouter();
+const testRunStore = useTestRunStore();
 
-const activeTab = ref('all')
-const testCases = ref([])
-const files = ref([])
-const searchKeyword = ref('')
-const currentPage = ref(1)
-const pageSize = ref(20)
-const sortField = ref('') // 排序字段：'name' 或 'duration_ms'
-const sortOrder = ref('') // 排序方向：'asc' 或 'desc'
+const activeTab = ref("all");
+const testCases = ref([]);
+const files = ref([]);
+const searchKeyword = ref("");
+const currentPage = ref(1);
+const pageSize = ref(20);
+const sortField = ref(""); // 排序字段：'name' 或 'duration_ms'
+const sortOrder = ref(""); // 排序方向：'asc' 或 'desc'
 
-const allTestCases = computed(() => testCases.value)
-const passedTestCases = computed(() => testCases.value.filter(tc => tc.status === 'passed'))
-const failedTestCases = computed(() => testCases.value.filter(tc => tc.status === 'failed'))
+const allTestCases = computed(() => testCases.value);
+const passedTestCases = computed(() =>
+  testCases.value.filter((tc) => tc.status === "passed"),
+);
+const failedTestCases = computed(() =>
+  testCases.value.filter((tc) => tc.status === "failed"),
+);
 
 // 根据标签页过滤的测例
 const tabFilteredTestCases = computed(() => {
   switch (activeTab.value) {
-    case 'passed':
-      return passedTestCases.value
-    case 'failed':
-      return failedTestCases.value
+    case "passed":
+      return passedTestCases.value;
+    case "failed":
+      return failedTestCases.value;
     default:
-      return allTestCases.value
+      return allTestCases.value;
   }
-})
+});
 
 // 根据搜索关键词过滤的测例
 const filteredTestCases = computed(() => {
-  let result = tabFilteredTestCases.value
-  
+  let result = tabFilteredTestCases.value;
+
   // 搜索过滤
   if (searchKeyword.value.trim()) {
-    const keyword = searchKeyword.value.trim().toLowerCase()
-    result = result.filter(tc => {
-      return tc.name && tc.name.toLowerCase().includes(keyword)
-    })
+    const keyword = searchKeyword.value.trim().toLowerCase();
+    result = result.filter((tc) => {
+      return tc.name && tc.name.toLowerCase().includes(keyword);
+    });
   }
-  
+
   // 排序
   if (sortField.value && sortOrder.value) {
     result = [...result].sort((a, b) => {
-      let aValue, bValue
-      
-      if (sortField.value === 'name') {
+      let aValue, bValue;
+
+      if (sortField.value === "name") {
         // 按名称排序（字符串）
-        aValue = (a.name || '').toLowerCase()
-        bValue = (b.name || '').toLowerCase()
-        if (sortOrder.value === 'asc') {
-          return aValue.localeCompare(bValue, 'zh-CN')
+        aValue = (a.name || "").toLowerCase();
+        bValue = (b.name || "").toLowerCase();
+        if (sortOrder.value === "asc") {
+          return aValue.localeCompare(bValue, "zh-CN");
         } else {
-          return bValue.localeCompare(aValue, 'zh-CN')
+          return bValue.localeCompare(aValue, "zh-CN");
         }
-      } else if (sortField.value === 'duration_ms') {
+      } else if (sortField.value === "duration_ms") {
         // 按耗时排序（数字）
-        aValue = a.duration_ms || 0
-        bValue = b.duration_ms || 0
-        if (sortOrder.value === 'asc') {
-          return aValue - bValue
+        aValue = a.duration_ms || 0;
+        bValue = b.duration_ms || 0;
+        if (sortOrder.value === "asc") {
+          return aValue - bValue;
         } else {
-          return bValue - aValue
+          return bValue - aValue;
         }
       }
-      return 0
-    })
+      return 0;
+    });
   }
-  
-  return result
-})
+
+  return result;
+});
 
 // 分页后的测例
 const paginatedTestCases = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredTestCases.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return filteredTestCases.value.slice(start, end);
+});
 
 // 监听搜索关键词变化，重置到第一页
 watch(searchKeyword, () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
 
 // 监听标签页变化，重置到第一页
 watch(activeTab, () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
 
 // 监听排序变化，重置到第一页
 watch([sortField, sortOrder], () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
 
 // 处理每页显示数量变化
 const handlePageSizeChange = (size) => {
-  pageSize.value = size
-  currentPage.value = 1
-}
+  pageSize.value = size;
+  currentPage.value = 1;
+};
 
 // 处理排序变化
 const handleSortChange = (sortInfo) => {
   // TDesign 表格的 sort-change 事件可能返回数组或对象
-  let sortData = null
+  let sortData = null;
   if (Array.isArray(sortInfo) && sortInfo.length > 0) {
-    sortData = sortInfo[0]
-  } else if (sortInfo && typeof sortInfo === 'object') {
-    sortData = sortInfo
+    sortData = sortInfo[0];
+  } else if (sortInfo && typeof sortInfo === "object") {
+    sortData = sortInfo;
   }
-  
+
   if (sortData && sortData.sortBy) {
-    sortField.value = sortData.sortBy
-    sortOrder.value = sortData.descending ? 'desc' : 'asc'
+    sortField.value = sortData.sortBy;
+    sortOrder.value = sortData.descending ? "desc" : "asc";
   } else {
-    sortField.value = ''
-    sortOrder.value = ''
+    sortField.value = "";
+    sortOrder.value = "";
   }
-}
+};
 
 const passRate = computed(() => {
-  if (allTestCases.value.length === 0) return 0
-  return Math.round((passedTestCases.value.length / allTestCases.value.length) * 100)
-})
+  if (allTestCases.value.length === 0) return 0;
+  return Math.round(
+    (passedTestCases.value.length / allTestCases.value.length) * 100,
+  );
+});
 
 const getStatusText = (status) => {
   const texts = {
-    passed: '通过',
-    failed: '失败',
-    running: '运行中',
-    cancelled: '已取消',
-  }
-  return texts[status] || status
-}
+    passed: "通过",
+    failed: "失败",
+    running: "运行中",
+    cancelled: "已取消",
+  };
+  return texts[status] || status;
+};
 
 const getStatusTheme = (status) => {
   const themes = {
-    passed: 'success',
-    failed: 'danger',
-    running: 'warning',
-    cancelled: 'default',
-  }
-  return themes[status] || 'default'
-}
+    passed: "success",
+    failed: "danger",
+    running: "warning",
+    cancelled: "default",
+  };
+  return themes[status] || "default";
+};
 
 const getStatusIcon = (status) => {
   const icons = {
-    passed: 'check-circle',
-    failed: 'close-circle',
-    running: 'time',
-    cancelled: 'stop-circle',
-  }
-  return icons[status] || 'question-circle'
-}
+    passed: "check-circle",
+    failed: "close-circle",
+    running: "time",
+    cancelled: "stop-circle",
+  };
+  return icons[status] || "question-circle";
+};
 
 const formatTime = (timeStr) => {
-  if (!timeStr) return '-'
-  const date = new Date(timeStr)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-}
+  if (!timeStr) return "-";
+  const date = new Date(timeStr);
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
 
 const formatFileSize = (bytes) => {
-  if (!bytes) return '0 B'
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
-}
+  if (!bytes) return "0 B";
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+};
 
 const copyCommitId = async () => {
-  if (!testRunStore.currentTestRun) return
+  if (!testRunStore.currentTestRun) return;
   try {
-    await navigator.clipboard.writeText(testRunStore.currentTestRun.commit_id)
-    MessagePlugin.success('已复制到剪贴板')
+    await navigator.clipboard.writeText(testRunStore.currentTestRun.commit_id);
+    MessagePlugin.success("已复制到剪贴板");
   } catch (error) {
-    MessagePlugin.error('复制失败')
+    MessagePlugin.error("复制失败");
   }
-}
+};
 
 const downloadFile = async (file) => {
-  if (!testRunStore.currentTestRun) return
+  if (!testRunStore.currentTestRun) return;
   try {
-    const response = await downloadFileAPI(testRunStore.currentTestRun.id, file.id)
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', file.filename)
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
-    MessagePlugin.success('下载成功')
+    const response = await downloadFileAPI(
+      testRunStore.currentTestRun.id,
+      file.id,
+    );
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", file.filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    MessagePlugin.success("下载成功");
   } catch (error) {
-    MessagePlugin.error('下载失败')
+    MessagePlugin.error("下载失败");
   }
-}
+};
 
 const goBack = () => {
-  router.push('/')
-}
+  router.push("/");
+};
 
 const goToLogin = () => {
-  router.push('/admin/login')
-}
+  router.push("/admin/login");
+};
 
 const refreshData = async () => {
-  await fetchData()
-  MessagePlugin.success('数据已刷新')
-}
+  await fetchData();
+  MessagePlugin.success("数据已刷新");
+};
 
 const fetchData = async () => {
-  const id = parseInt(route.params.id)
-  await testRunStore.fetchTestRunById(id)
+  const id = parseInt(route.params.id);
+  await testRunStore.fetchTestRunById(id);
 
   try {
-    const testCasesRes = await getTestCasesByTestRunId(id)
-    testCases.value = testCasesRes.data || []
+    const testCasesRes = await getTestCasesByTestRunId(id);
+    testCases.value = testCasesRes.data || [];
 
-    const filesRes = await getFilesByTestRunId(id)
-    files.value = filesRes.data || []
+    const filesRes = await getFilesByTestRunId(id);
+    files.value = filesRes.data || [];
   } catch (error) {
-    console.error('Failed to fetch data:', error)
-    MessagePlugin.error('加载数据失败')
+    console.error("Failed to fetch data:", error);
+    MessagePlugin.error("加载数据失败");
   }
-}
+};
 
 onMounted(() => {
-  fetchData()
-})
+  fetchData();
+});
 </script>
 
 <style scoped>
@@ -705,7 +766,7 @@ onMounted(() => {
 }
 
 .code-value code {
-  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-family: "Monaco", "Menlo", "Consolas", monospace;
   font-size: 13px;
   background: #f3f4f6;
   padding: 6px 12px;
@@ -993,4 +1054,3 @@ onMounted(() => {
   }
 }
 </style>
-

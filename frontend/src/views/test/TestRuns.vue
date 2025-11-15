@@ -7,7 +7,10 @@
 
     <div class="content-card">
       <t-card>
-        <t-alert message="此页面将整合原有的测试列表功能，提供更强大的管理功能" theme="info" />
+        <t-alert
+          message="此页面将整合原有的测试列表功能，提供更强大的管理功能"
+          theme="info"
+        />
       </t-card>
     </div>
   </div>
