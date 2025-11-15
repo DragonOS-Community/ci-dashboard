@@ -54,14 +54,13 @@
           </div>
 
           <div class="metric-item total-cases">
-            <div class="metric-label">总测例数</div>
+            <div class="metric-label">通过测例数</div>
             <div class="metric-value">
-              <span class="value-number">{{ formatNumber(stats.total_cases) }}</span>
+              <span class="value-number">{{ formatNumber(stats.passed_cases) }}</span>
             </div>
             <div class="metric-detail">
-              <span class="detail-item success">
-                <t-icon name="check-circle" />
-                {{ formatNumber(stats.passed_cases) }} 通过
+              <span class="detail-item">
+                共 {{ formatNumber(stats.total_cases) }} 个测例
               </span>
               <span class="detail-item failed" v-if="stats.failed_cases > 0">
                 <t-icon name="close-circle" />
@@ -133,51 +132,53 @@ const stats = ref<MasterBranchStats | null>(null)
 const loading = ref(false)
 const hasNoData = ref(false)
 
-const getStatusTheme = (status) => {
-  const themes = {
+type TestRunStatus = 'passed' | 'failed' | 'running' | 'cancelled'
+
+const getStatusTheme = (status: string): string => {
+  const themes: Record<TestRunStatus, string> = {
     passed: 'success',
     failed: 'danger',
     running: 'warning',
     cancelled: 'default',
   }
-  return themes[status] || 'default'
+  return themes[status as TestRunStatus] || 'default'
 }
 
-const getStatusText = (status) => {
-  const texts = {
+const getStatusText = (status: string): string => {
+  const texts: Record<TestRunStatus, string> = {
     passed: '通过',
     failed: '失败',
     running: '运行中',
     cancelled: '已取消',
   }
-  return texts[status] || status
+  return texts[status as TestRunStatus] || status
 }
 
-const getStatusIcon = (status) => {
-  const icons = {
+const getStatusIcon = (status: string): string => {
+  const icons: Record<TestRunStatus, string> = {
     passed: 'check-circle',
     failed: 'close-circle',
     running: 'time',
     cancelled: 'stop-circle',
   }
-  return icons[status] || 'question-circle'
+  return icons[status as TestRunStatus] || 'question-circle'
 }
 
-const getPassRateTheme = (rate) => {
+const getPassRateTheme = (rate: number): string => {
   if (rate >= 95) return 'success'
   if (rate >= 80) return 'warning'
   return 'danger'
 }
 
-const formatPassRate = (rate) => {
+const formatPassRate = (rate: number): string => {
   return rate.toFixed(1)
 }
 
-const formatNumber = (num) => {
+const formatNumber = (num: number): string => {
   return num.toLocaleString()
 }
 
-const formatDuration = (ms) => {
+const formatDuration = (ms: number): string => {
   if (ms < 1000) return `${ms}ms`
   if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
   const minutes = Math.floor(ms / 60000)
@@ -190,7 +191,7 @@ const formatDuration = (ms) => {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
 }
 
-const formatTime = (timeStr) => {
+const formatTime = (timeStr: string): string => {
   const date = new Date(timeStr)
   return date.toLocaleString('zh-CN', {
     year: 'numeric',
