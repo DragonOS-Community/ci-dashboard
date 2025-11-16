@@ -3,10 +3,10 @@
     <!-- 侧边栏 -->
     <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
       <div class="sidebar-header">
-        <div class="logo">
+        <router-link to="/" class="logo">
           <div class="logo-icon">🐉</div>
           <span v-show="!sidebarCollapsed" class="logo-text">DragonOS CI</span>
-        </div>
+        </router-link>
       </div>
 
       <nav class="sidebar-nav">
@@ -227,6 +227,13 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.logo:hover {
+  opacity: 0.8;
 }
 
 .logo-icon {
