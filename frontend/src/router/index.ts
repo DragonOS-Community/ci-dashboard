@@ -91,26 +91,6 @@ const routes: RouteRecordRaw[] = [
         ],
       },
 
-      // 监控中心
-      {
-        path: "monitor",
-        redirect: "/admin/monitor/system",
-        children: [
-          {
-            path: "system",
-            name: "SystemMonitor",
-            component: () => import("@/views/monitor/SystemMonitor.vue"),
-            meta: { title: "系统监控" },
-          },
-          {
-            path: "statistics",
-            name: "Statistics",
-            component: () => import("@/views/monitor/Statistics.vue"),
-            meta: { title: "性能统计" },
-          },
-        ],
-      },
-
       // 系统设置
       {
         path: "settings",

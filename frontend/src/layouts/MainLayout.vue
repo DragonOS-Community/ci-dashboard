@@ -132,18 +132,6 @@ const menuItems = [
     ],
   },
   {
-    key: "monitor",
-    title: "监控中心",
-    items: [
-      { path: "/admin/monitor/system", label: "系统监控", icon: "monitor" },
-      {
-        path: "/admin/monitor/statistics",
-        label: "性能统计",
-        icon: "chart-bar",
-      },
-    ],
-  },
-  {
     key: "settings",
     title: "系统设置",
     items: [
@@ -167,15 +155,12 @@ const breadcrumbs = computed(() => {
     dashboard: "仪表盘",
     test: "测试",
     system: "系统",
-    monitor: "监控",
     settings: "设置",
     overview: "概览",
     runs: "运行",
     reports: "报告",
     "api-keys": "API密钥",
     projects: "项目",
-    system: "监控",
-    statistics: "统计",
     profile: "个人中心",
     config: "配置",
   };
