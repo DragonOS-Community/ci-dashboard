@@ -50,14 +50,41 @@
       <!-- 顶部导航 -->
       <header class="header">
         <div class="header-left">
-          <t-breadcrumb>
-            <t-breadcrumb-item v-for="item in breadcrumbs" :key="item.path">
-              <router-link v-if="item.path" :to="item.path">{{
-                item.title
-              }}</router-link>
-              <span v-else>{{ item.title }}</span>
-            </t-breadcrumb-item>
-          </t-breadcrumb>
+          <nav class="breadcrumb-nav">
+            <div class="breadcrumb-list">
+              <div
+                v-for="(item, index) in breadcrumbs"
+                :key="`${item.path || 'current'}-${index}`"
+                class="breadcrumb-item"
+              >
+                <router-link
+                  v-if="item.path"
+                  :to="item.path"
+                  class="breadcrumb-link"
+                >
+                  <t-icon
+                    v-if="index === 0"
+                    name="home"
+                    class="breadcrumb-icon"
+                  />
+                  {{ item.title }}
+                </router-link>
+                <span v-else class="breadcrumb-current">
+                  <t-icon
+                    v-if="index === 0"
+                    name="home"
+                    class="breadcrumb-icon"
+                  />
+                  {{ item.title }}
+                </span>
+                <t-icon
+                  v-if="index < breadcrumbs.length - 1"
+                  name="chevron-right"
+                  class="breadcrumb-separator"
+                />
+              </div>
+            </div>
+          </nav>
         </div>
 
         <div class="header-right">
@@ -149,35 +176,44 @@ const menuItems = [
 // 面包屑导航
 const breadcrumbs = computed(() => {
   const paths = route.path.split("/").filter(Boolean);
-  const result = [{ title: "首页", path: "/admin/dashboard" }];
+  const result = [];
 
-  let currentPath = "";
+  // 路由映射表
   const routeMap = {
+    admin: "管理后台",
     dashboard: "仪表盘",
-    test: "测试",
-    system: "系统",
-    settings: "设置",
-    overview: "概览",
-    runs: "运行",
-    reports: "报告",
+    test: "测试管理",
+    system: "系统管理",
+    settings: "系统设置",
+    overview: "测试概览",
+    runs: "测试运行",
+    reports: "测试报告",
     "api-keys": "API密钥",
-    projects: "项目",
+    projects: "项目管理",
     profile: "个人中心",
-    config: "配置",
+    config: "系统配置",
   };
 
-  paths.forEach((path) => {
+  // 构建面包屑路径
+  let currentPath = "";
+  paths.forEach((path, index) => {
     currentPath += `/${path}`;
     const title = routeMap[path] || path;
-    if (result.length > 0) {
-      result[result.length - 1].path = currentPath;
-    }
-    if (paths.indexOf(path) < paths.length - 1) {
-      result.push({ title, path: "" });
-    } else {
-      result.push({ title, path: "" });
-    }
+    const isLast = index === paths.length - 1;
+
+    result.push({
+      title,
+      path: isLast ? null : currentPath, // 最后一项不设置路径
+    });
   });
+
+  // 如果路径为空或只有 admin，添加首页
+  if (
+    result.length === 0 ||
+    (result.length === 1 && result[0].title === "管理后台")
+  ) {
+    return [{ title: "首页", path: "/admin/dashboard" }];
+  }
 
   return result;
 });
@@ -341,6 +377,103 @@ const handleLogout = async () => {
 .header-left {
   display: flex;
   align-items: center;
+  flex: 1;
+}
+
+/* 面包屑导航样式 */
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.breadcrumb-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #6b7280;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-weight: 400;
+}
+
+.breadcrumb-link:hover {
+  color: #f59e0b;
+  background-color: #fef9f3;
+}
+
+.breadcrumb-current {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 500;
+  padding: 4px 8px;
+}
+
+.breadcrumb-icon {
+  font-size: 16px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.breadcrumb-link:hover .breadcrumb-icon {
+  color: #f59e0b;
+}
+
+.breadcrumb-current .breadcrumb-icon {
+  color: #f59e0b;
+}
+
+.breadcrumb-separator {
+  font-size: 14px;
+  color: #d1d5db;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .breadcrumb-nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .breadcrumb-list {
+    min-width: max-content;
+  }
+
+  .breadcrumb-link,
+  .breadcrumb-current {
+    font-size: 13px;
+    padding: 3px 6px;
+    white-space: nowrap;
+  }
+
+  .breadcrumb-icon {
+    font-size: 14px;
+  }
+
+  .breadcrumb-separator {
+    font-size: 12px;
+    margin: 0 2px;
+  }
 }
 
 .header-right {
@@ -350,16 +483,110 @@ const handleLogout = async () => {
 }
 
 .user-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px;
+  padding: 0 12px !important;
   border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+  height: 40px;
+  line-height: 1;
+  min-width: auto;
+}
+
+.user-button :deep(.t-button__text) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px;
+  height: 100%;
+}
+
+.user-button:hover {
+  background-color: #fef9f3;
+  border-color: #f59e0b;
+}
+
+.user-button:hover :deep(.t-icon) {
+  color: #f59e0b;
 }
 
 .username {
   font-size: 14px;
   color: #1f2937;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.user-button:hover .username {
+  color: #f59e0b;
+}
+
+.user-button :deep(.t-icon) {
+  color: #6b7280;
+  transition: color 0.2s ease;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* 头像样式优化 */
+.user-button :deep(.t-avatar) {
+  flex-shrink: 0;
+}
+
+.user-button :deep(.t-avatar__inner),
+.user-button :deep(.t-avatar > div) {
+  background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 下拉菜单样式 */
+:deep(.t-dropdown__menu) {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  background-color: #ffffff;
+  margin-top: 8px;
+}
+
+:deep(.t-dropdown__menu:hover) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+:deep(.t-dropdown-item) {
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 2px 0;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+:deep(.t-dropdown-item:hover) {
+  background-color: #fef9f3;
+  color: #f59e0b;
+}
+
+:deep(.t-dropdown-item .t-icon) {
+  font-size: 16px;
+  color: #6b7280;
+}
+
+:deep(.t-dropdown-item:hover .t-icon) {
+  color: #f59e0b;
 }
 
 .content {

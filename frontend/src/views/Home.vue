@@ -8,7 +8,7 @@
       <div class="content-wrapper">
         <!-- 页面标题 -->
         <div class="page-header">
-          <h1>DragonOS CI Dashboard</h1>
+          <h1>测试概览</h1>
           <p class="page-description">实时查看DragonOS项目的CI测试结果和状态</p>
         </div>
 
@@ -403,12 +403,35 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.search-btn {
+.search-btn,
+.reset-btn {
   min-width: 100px;
   height: 40px;
   border-radius: 8px;
   font-weight: 500;
   transition: all 0.2s ease;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+}
+
+.search-btn :deep(.t-button__text),
+.reset-btn :deep(.t-button__text) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  line-height: 1;
+}
+
+.search-btn :deep(.t-icon),
+.reset-btn :deep(.t-icon) {
+  font-size: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-btn:hover {
@@ -417,12 +440,7 @@ onMounted(() => {
 }
 
 .reset-btn {
-  min-width: 100px;
-  height: 40px;
-  border-radius: 8px;
-  font-weight: 500;
   border-color: #e5e7eb;
-  transition: all 0.2s ease;
 }
 
 .reset-btn:hover {
@@ -436,6 +454,40 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+}
+
+/* 刷新按钮样式 */
+.list-header :deep(.t-button) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  height: 40px;
+  border-radius: 8px;
+  font-weight: 500;
+  border-color: #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.list-header :deep(.t-button__text) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  line-height: 1;
+}
+
+.list-header :deep(.t-button .t-icon) {
+  font-size: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list-header :deep(.t-button:hover) {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
 }
 
 .list-title {
@@ -501,6 +553,31 @@ onMounted(() => {
 .time-cell {
   color: #6b7280;
   font-size: 13px;
+}
+
+/* 操作按钮样式 */
+:deep(.t-table .t-button--variant-text) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px;
+  line-height: 1;
+}
+
+:deep(.t-table .t-button--variant-text .t-button__text) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px;
+  line-height: 1;
+}
+
+:deep(.t-table .t-button--variant-text .t-icon) {
+  font-size: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 状态标签 */

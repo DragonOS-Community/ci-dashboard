@@ -27,8 +27,8 @@
           </div>
           <div class="page-header-actions">
             <t-button
+              theme="warning"
               variant="outline"
-              theme="default"
               @click="refreshData"
               class="refresh-btn"
             >
@@ -559,6 +559,28 @@ onMounted(() => {
 .back-btn {
   color: #6b7280;
   transition: all 0.2s ease;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  height: 40px;
+  font-weight: 500;
+}
+
+.back-btn :deep(.t-button__text) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  line-height: 1;
+}
+
+.back-btn :deep(.t-icon) {
+  font-size: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .back-btn:hover {
@@ -581,8 +603,11 @@ onMounted(() => {
 
 .test-run-id {
   font-size: 16px;
-  color: #9ca3af;
-  font-weight: 400;
+  color: #f59e0b;
+  font-weight: 500;
+  background-color: #fef9f3;
+  padding: 4px 12px;
+  border-radius: 16px;
 }
 
 .page-header-actions {
@@ -593,11 +618,36 @@ onMounted(() => {
 .refresh-btn {
   border-radius: 8px;
   transition: all 0.2s ease;
+  height: 40px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  border-color: #f59e0b;
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.refresh-btn :deep(.t-button__text) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  line-height: 1;
+}
+
+.refresh-btn :deep(.t-icon) {
+  font-size: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .refresh-btn:hover {
-  border-color: #f59e0b;
-  color: #f59e0b;
+  border-color: #d97706;
+  background-color: #fef9f3;
+  color: #d97706;
 }
 
 /* 主内容区 */
@@ -658,6 +708,18 @@ onMounted(() => {
   font-weight: 600;
   color: #1f2937;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title::before {
+  content: "";
+  width: 4px;
+  height: 18px;
+  background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .status-tag {
@@ -688,7 +750,19 @@ onMounted(() => {
 
 .info-label :deep(.t-icon) {
   font-size: 16px;
-  color: #9ca3af;
+  color: #f59e0b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.info-label :deep(.t-icon svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .info-value {
@@ -718,6 +792,17 @@ onMounted(() => {
   flex-shrink: 0;
   color: #6b7280;
   transition: all 0.2s ease;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 4px;
+}
+
+.copy-btn :deep(.t-icon) {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .copy-btn:hover {
@@ -734,46 +819,53 @@ onMounted(() => {
 
 .stat-item {
   text-align: center;
-  padding: 20px;
-  background: #fafafa;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .stat-item:hover {
-  background: #f3f4f6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
 }
 
 .stat-item.success {
-  background: #d1fae5;
+  background: #ffffff;
+  border-color: #10b981;
 }
 
 .stat-item.success:hover {
-  background: #a7f3d0;
+  background: #f0fdf4;
+  border-color: #10b981;
 }
 
 .stat-item.danger {
-  background: #fee2e2;
+  background: #ffffff;
+  border-color: #ef4444;
 }
 
 .stat-item.danger:hover {
-  background: #fecaca;
+  background: #fef2f2;
+  border-color: #ef4444;
 }
 
 .stat-value {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: #1f2937;
   margin-bottom: 8px;
+  line-height: 1.2;
 }
 
 .stat-item.success .stat-value {
-  color: #065f46;
+  color: #10b981;
 }
 
 .stat-item.danger .stat-value {
-  color: #991b1b;
+  color: #ef4444;
 }
 
 .stat-label {
@@ -785,6 +877,20 @@ onMounted(() => {
 /* 测例列表 */
 .filter-tabs {
   flex-shrink: 0;
+}
+
+/* 标签页主题色 */
+:deep(.t-tabs__nav-item--active) {
+  color: #f59e0b;
+}
+
+:deep(.t-tabs__nav-item--active .t-tabs__nav-item-text) {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+:deep(.t-tabs__bar) {
+  background-color: #f59e0b;
 }
 
 .test-cases-toolbar {
@@ -801,6 +907,21 @@ onMounted(() => {
 
 .search-input {
   max-width: 400px;
+}
+
+.search-input :deep(.t-input) {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.search-input :deep(.t-input:hover) {
+  border-color: #f59e0b;
+}
+
+.search-input :deep(.t-input--focused) {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
 }
 
 .search-result-info {
@@ -844,12 +965,15 @@ onMounted(() => {
   padding: 16px;
   border-radius: 8px;
   transition: all 0.2s ease;
-  border: 1px solid transparent;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  margin-bottom: 8px;
 }
 
 .file-item:hover {
   background-color: #fef9f3;
-  border-color: #fde68a;
+  border-color: #f59e0b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .file-info {
@@ -870,7 +994,7 @@ onMounted(() => {
 }
 
 .file-name :deep(.t-icon) {
-  color: #9ca3af;
+  color: #f59e0b;
   font-size: 18px;
 }
 
@@ -891,9 +1015,35 @@ onMounted(() => {
 .download-btn {
   border-radius: 8px;
   transition: all 0.2s ease;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px;
+  font-weight: 500;
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.download-btn :deep(.t-button__text) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px;
+  line-height: 1;
+}
+
+.download-btn :deep(.t-icon) {
+  font-size: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .download-btn:hover {
+  border-color: #d97706;
+  background-color: #fef9f3;
+  color: #d97706;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
@@ -933,6 +1083,13 @@ onMounted(() => {
 }
 
 :deep(.t-tag--light-warning) {
+  background-color: #fef3c7;
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+/* 主题色标签（测试类型等） */
+:deep(.t-tag--light-primary) {
   background-color: #fef3c7;
   color: #d97706;
   border-color: #f59e0b;

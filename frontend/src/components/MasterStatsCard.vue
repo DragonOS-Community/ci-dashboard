@@ -3,7 +3,7 @@
     <div class="stats-header">
       <div class="header-left">
         <div class="branch-badge">
-          <t-icon name="code-branch" />
+          <t-icon name="git-branch" />
           <span>{{ stats?.branch_name || "master" }}</span>
         </div>
         <div class="test-type-badge">
@@ -293,6 +293,24 @@ defineExpose({
   color: #92400e;
 }
 
+.branch-badge :deep(.t-icon),
+.test-type-badge :deep(.t-icon) {
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.branch-badge :deep(.t-icon svg),
+.test-type-badge :deep(.t-icon svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .test-type-badge {
   background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
   color: #1e40af;
@@ -380,6 +398,22 @@ defineExpose({
   font-weight: 500;
 }
 
+.detail-item :deep(.t-icon) {
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.detail-item :deep(.t-icon svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .detail-item.success {
   color: #059669;
 }
@@ -410,6 +444,23 @@ defineExpose({
   color: #6b7280;
 }
 
+.footer-item :deep(.t-icon) {
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: #f59e0b;
+}
+
+.footer-item :deep(.t-icon svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .footer-label {
   font-weight: 500;
 }
@@ -418,6 +469,22 @@ defineExpose({
   color: #1f2937;
   font-weight: 600;
   font-family: "Monaco", "Menlo", monospace;
+}
+
+.footer-item :deep(.t-button .t-icon) {
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.footer-item :deep(.t-button .t-icon svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .no-data-content {
