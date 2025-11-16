@@ -74,6 +74,10 @@ func SetupRouter() *gin.Engine {
 		admin.GET("/test-runs", handlers.GetTestRunsAdmin)
 		admin.DELETE("/test-runs/:id", handlers.DeleteTestRun)
 		admin.PUT("/test-runs/:id/visibility", handlers.UpdateTestRunVisibility)
+		// 系统配置接口
+		admin.GET("/system-configs", handlers.GetSystemConfigs)
+		admin.GET("/system-configs/:key", handlers.GetSystemConfig)
+		admin.PUT("/system-configs/:key", handlers.UpdateSystemConfig)
 	}
 
 	// 公开的管理登录和注册接口（不需要认证）

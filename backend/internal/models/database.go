@@ -32,6 +32,7 @@ func InitDatabase() error {
 		&TestOutputFile{},
 		&APIKey{},
 		&User{},
+		&SystemConfig{},
 	); err != nil {
 		return fmt.Errorf("failed to auto migrate: %w", err)
 	}

@@ -68,6 +68,12 @@ func GetFileByID(c *gin.Context) {
 
 // UploadFile 上传文件（受保护接口）
 func UploadFile(c *gin.Context) {
+	// 检查是否允许上传测试输出文件
+	if !services.IsUploadOutputFilesAllowed() {
+		response.Forbidden(c, "Uploading test output files is not allowed")
+		return
+	}
+
 	testRunIDStr := c.Param("id")
 	testRunID, err := strconv.ParseUint(testRunIDStr, 10, 64)
 	if err != nil {

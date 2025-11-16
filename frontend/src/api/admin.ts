@@ -248,3 +248,53 @@ export function updateTestRunVisibility(
     data: { is_public: isPublic },
   });
 }
+
+// 系统配置相关接口
+export interface SystemConfig {
+  id: number;
+  config_key: string;
+  config_value: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateConfigData {
+  value: string;
+  description?: string;
+}
+
+// 获取所有系统配置
+export function getSystemConfigs(): AxiosPromise<SystemConfig[]> {
+  return request({
+    url: "/admin/system-configs",
+    method: "get",
+  });
+}
+
+// 根据key获取系统配置
+export function getSystemConfig(key: string): AxiosPromise<{
+  key: string;
+  value: string;
+}> {
+  return request({
+    url: `/admin/system-configs/${key}`,
+    method: "get",
+  });
+}
+
+// 更新系统配置
+export function updateSystemConfig(
+  key: string,
+  data: UpdateConfigData,
+): AxiosPromise<{
+  key: string;
+  value: string;
+  message: string;
+}> {
+  return request({
+    url: `/admin/system-configs/${key}`,
+    method: "put",
+    data,
+  });
+}

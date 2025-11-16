@@ -468,3 +468,64 @@ func GetTestRunsAdmin(c *gin.Context) {
 		"page_size": params.PageSize,
 	})
 }
+
+// GetSystemConfigs 获取所有系统配置
+func GetSystemConfigs(c *gin.Context) {
+	configs, err := services.GetAllConfigs()
+	if err != nil {
+		response.InternalServerError(c, "Failed to get system configs")
+		return
+	}
+
+	response.Success(c, configs)
+}
+
+// GetSystemConfig 根据key获取系统配置
+func GetSystemConfig(c *gin.Context) {
+	key := c.Param("key")
+	if key == "" {
+		response.BadRequest(c, "Config key is required")
+		return
+	}
+
+	value, err := services.GetConfig(key)
+	if err != nil {
+		response.NotFound(c, "Config not found")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"key":   key,
+		"value": value,
+	})
+}
+
+// UpdateSystemConfig 更新系统配置
+func UpdateSystemConfig(c *gin.Context) {
+	key := c.Param("key")
+	if key == "" {
+		response.BadRequest(c, "Config key is required")
+		return
+	}
+
+	var req struct {
+		Value       string `json:"value" binding:"required"`
+		Description string `json:"description"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	if err := services.SetConfig(key, req.Value, req.Description); err != nil {
+		response.InternalServerError(c, "Failed to update system config")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"key":     key,
+		"value":   req.Value,
+		"message": "Config updated successfully",
+	})
+}
