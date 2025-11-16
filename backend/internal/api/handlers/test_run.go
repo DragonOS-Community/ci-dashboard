@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -51,7 +52,8 @@ func GetTestRuns(c *gin.Context) {
 		}
 	}
 
-	testRuns, total, err := services.QueryTestRuns(params)
+	// 公开接口只返回公开的记录
+	testRuns, total, err := services.QueryTestRuns(params, false)
 	if err != nil {
 		response.InternalServerError(c, "Failed to query test runs")
 		return
@@ -80,6 +82,12 @@ func GetTestRunByID(c *gin.Context) {
 		return
 	}
 
+	// 公开接口只返回公开的记录
+	if !testRun.IsPublic {
+		response.NotFound(c, "Test run not found")
+		return
+	}
+
 	response.Success(c, testRun)
 }
 
@@ -89,6 +97,17 @@ func GetTestCasesByTestRunID(c *gin.Context) {
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		response.BadRequest(c, "Invalid test run ID")
+		return
+	}
+
+	// 检查测试运行是否存在且为公开
+	testRun, err := services.GetTestRunByID(id)
+	if err != nil {
+		response.NotFound(c, "Test run not found")
+		return
+	}
+	if !testRun.IsPublic {
+		response.NotFound(c, "Test run not found")
 		return
 	}
 
@@ -117,7 +136,7 @@ func CreateTestRun(c *gin.Context) {
 	var req struct {
 		BranchName string `json:"branch_name" binding:"required"`
 		CommitID   string `json:"commit_id" binding:"required"`
-		TestType   string `json:"test_type"`
+		TestType   string `json:"test_type" binding:"required"`
 		TestCases  []struct {
 			Name       string `json:"name" binding:"required"`
 			Status     string `json:"status" binding:"required"`
@@ -139,15 +158,12 @@ func CreateTestRun(c *gin.Context) {
 		return
 	}
 
-	// 验证 test_type 只能为 gvisor
-	testType := req.TestType
-	if testType == "" {
-		testType = "gvisor"
-	}
-	if testType != "gvisor" {
-		response.BadRequest(c, "test_type must be 'gvisor'")
+	// 验证 test_type 必须为 gvisor
+	if req.TestType != string(models.TestTypeGvisor) {
+		response.BadRequest(c, fmt.Sprintf("test_type must be '%s'", models.TestTypeGvisor))
 		return
 	}
+	testType := req.TestType
 
 	// 自动截取 commit_short_id（前10位）
 	commitShortID := req.CommitID

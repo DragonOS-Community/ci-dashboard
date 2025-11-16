@@ -8,12 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// 定义错误
-var (
-	ErrProjectExists   = errors.New("project with this name already exists")
-	ErrProjectNotFound = errors.New("project not found")
-)
-
 // ListProjects 列出所有项目
 func ListProjects() ([]models.Project, error) {
 	var projects []models.Project

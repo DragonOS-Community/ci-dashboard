@@ -186,3 +186,65 @@ export function deleteProject(id: number): AxiosPromise {
     method: "delete",
   });
 }
+
+// 测试运行管理接口
+export interface TestRun {
+  id: number;
+  project_id: number;
+  branch_name: string;
+  commit_id: string;
+  commit_short_id: string;
+  test_type: string;
+  status: string;
+  is_public: boolean;
+  started_at?: string;
+  completed_at?: string;
+  created_at: string;
+  project?: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface TestRunListResponse {
+  test_runs: TestRun[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+// 获取测试运行列表（管理员接口，包含私有记录）
+export function getTestRunsAdmin(params?: {
+  page?: number;
+  page_size?: number;
+  branch?: string;
+  commit_id?: string;
+  test_type?: string;
+  status?: string;
+}): AxiosPromise<TestRunListResponse> {
+  return request({
+    url: "/admin/test-runs",
+    method: "get",
+    params,
+  });
+}
+
+// 删除测试运行
+export function deleteTestRun(id: number): AxiosPromise {
+  return request({
+    url: `/admin/test-runs/${id}`,
+    method: "delete",
+  });
+}
+
+// 更新测试运行可见性
+export function updateTestRunVisibility(
+  id: number,
+  isPublic: boolean,
+): AxiosPromise<TestRun> {
+  return request({
+    url: `/admin/test-runs/${id}/visibility`,
+    method: "put",
+    data: { is_public: isPublic },
+  });
+}

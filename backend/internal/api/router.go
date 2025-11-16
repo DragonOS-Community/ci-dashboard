@@ -70,6 +70,10 @@ func SetupRouter() *gin.Engine {
 		// 仪表板接口
 		admin.GET("/dashboard/stats", handlers.GetDashboardStats)
 		admin.GET("/dashboard/trend", handlers.GetDashboardTrend)
+		// 测试运行管理接口
+		admin.GET("/test-runs", handlers.GetTestRunsAdmin)
+		admin.DELETE("/test-runs/:id", handlers.DeleteTestRun)
+		admin.PUT("/test-runs/:id/visibility", handlers.UpdateTestRunVisibility)
 	}
 
 	// 公开的管理登录和注册接口（不需要认证）

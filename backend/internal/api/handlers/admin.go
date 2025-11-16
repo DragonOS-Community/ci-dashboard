@@ -364,3 +364,107 @@ func DeleteProject(c *gin.Context) {
 
 	response.Success(c, nil)
 }
+
+// DeleteTestRun 删除测试运行（管理员接口）
+func DeleteTestRun(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid test run ID")
+		return
+	}
+
+	if err := services.DeleteTestRun(id); err != nil {
+		if errors.Is(err, services.ErrTestRunNotFound) {
+			response.NotFound(c, "Test run not found")
+			return
+		}
+		response.InternalServerError(c, "Failed to delete test run")
+		return
+	}
+
+	response.Success(c, nil)
+}
+
+// UpdateTestRunVisibility 更新测试运行可见性（管理员接口）
+func UpdateTestRunVisibility(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid test run ID")
+		return
+	}
+
+	var req struct {
+		IsPublic bool `json:"is_public"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	if err := services.UpdateTestRunVisibility(id, req.IsPublic); err != nil {
+		if errors.Is(err, services.ErrTestRunNotFound) {
+			response.NotFound(c, "Test run not found")
+			return
+		}
+		response.InternalServerError(c, "Failed to update test run visibility")
+		return
+	}
+
+	// 返回更新后的测试运行
+	testRun, err := services.GetTestRunByID(id)
+	if err != nil {
+		response.InternalServerError(c, "Failed to get updated test run")
+		return
+	}
+
+	response.Success(c, testRun)
+}
+
+// GetTestRunsAdmin 获取测试运行列表（管理员接口，包含私有记录）
+func GetTestRunsAdmin(c *gin.Context) {
+	params := services.TestRunQueryParams{
+		Page:     1,
+		PageSize: 20,
+	}
+
+	// 解析查询参数
+	if branch := c.Query("branch"); branch != "" {
+		params.Branch = branch
+	}
+	if commitID := c.Query("commit_id"); commitID != "" {
+		params.CommitID = commitID
+	}
+	if testType := c.Query("test_type"); testType != "" {
+		params.TestType = testType
+	}
+	if status := c.Query("status"); status != "" {
+		params.Status = status
+	}
+	if page := c.Query("page"); page != "" {
+		if p, err := strconv.Atoi(page); err == nil && p > 0 {
+			params.Page = p
+		}
+	}
+	if pageSize := c.Query("page_size"); pageSize != "" {
+		if ps, err := strconv.Atoi(pageSize); err == nil && ps > 0 {
+			params.PageSize = ps
+		}
+	}
+
+	// 管理员接口包含私有记录
+	testRuns, total, err := services.QueryTestRuns(params, true)
+	if err != nil {
+		response.InternalServerError(c, "Failed to query test runs")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"test_runs": testRuns,
+		"total":     total,
+		"page":      params.Page,
+		"page_size": params.PageSize,
+	})
+}

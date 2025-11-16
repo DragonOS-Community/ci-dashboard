@@ -16,6 +16,14 @@ const (
 	TestRunStatusCancelled TestRunStatus = "cancelled"
 )
 
+// TestType 测试类型
+type TestType string
+
+const (
+	// TestTypeGvisor gvisor测试类型
+	TestTypeGvisor TestType = "gvisor"
+)
+
 // TestRun 测试运行记录模型
 type TestRun struct {
 	ID            uint64        `gorm:"primaryKey;autoIncrement" json:"id"`
@@ -25,6 +33,7 @@ type TestRun struct {
 	CommitShortID string        `gorm:"type:varchar(10);not null;index" json:"commit_short_id"`
 	TestType      string        `gorm:"type:varchar(50);not null;default:'gvisor';index" json:"test_type"`
 	Status        TestRunStatus `gorm:"type:enum('passed','failed','running','cancelled');not null;default:'running';index" json:"status"`
+	IsPublic      bool          `gorm:"type:boolean;not null;default:true;index" json:"is_public"`
 	StartedAt     *time.Time    `gorm:"type:datetime" json:"started_at,omitempty"`
 	CompletedAt   *time.Time    `gorm:"type:datetime" json:"completed_at,omitempty"`
 	CreatedAt     time.Time     `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP;index" json:"created_at"`

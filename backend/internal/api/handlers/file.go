@@ -26,6 +26,17 @@ func GetFileByID(c *gin.Context) {
 		return
 	}
 
+	// 检查测试运行是否存在且为公开
+	testRun, err := services.GetTestRunByID(testRunID)
+	if err != nil {
+		response.NotFound(c, "Test run not found")
+		return
+	}
+	if !testRun.IsPublic {
+		response.NotFound(c, "Test run not found")
+		return
+	}
+
 	file, err := services.GetFileByID(fileID)
 	if err != nil {
 		response.NotFound(c, "File not found")
@@ -108,6 +119,17 @@ func GetFilesByTestRunID(c *gin.Context) {
 	testRunID, err := strconv.ParseUint(testRunIDStr, 10, 64)
 	if err != nil {
 		response.BadRequest(c, "Invalid test run ID")
+		return
+	}
+
+	// 检查测试运行是否存在且为公开
+	testRun, err := services.GetTestRunByID(testRunID)
+	if err != nil {
+		response.NotFound(c, "Test run not found")
+		return
+	}
+	if !testRun.IsPublic {
+		response.NotFound(c, "Test run not found")
 		return
 	}
 

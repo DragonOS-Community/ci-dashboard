@@ -1,16 +1,19 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
+	"gorm.io/gorm"
 )
 
 // TestRunQueryParams 测试运行查询参数
 type TestRunQueryParams struct {
 	Branch       string
 	CommitID     string
+	TestType     string
 	StartTime    *time.Time
 	EndTime      *time.Time
 	Status       string
@@ -50,11 +53,17 @@ func GetTestRunByID(id uint64) (*models.TestRun, error) {
 }
 
 // QueryTestRuns 查询测试运行列表
-func QueryTestRuns(params TestRunQueryParams) ([]models.TestRun, int64, error) {
+// includePrivate 为true时包含私有记录（管理员使用），为false时只返回公开记录（公开接口使用）
+func QueryTestRuns(params TestRunQueryParams, includePrivate bool) ([]models.TestRun, int64, error) {
 	var testRuns []models.TestRun
 	var total int64
 
 	query := models.DB.Model(&models.TestRun{}).Preload("Project")
+
+	// 如果不是管理员查询，只返回公开的记录
+	if !includePrivate {
+		query = query.Where("is_public = ?", true)
+	}
 
 	// 分支名过滤（模糊匹配）
 	if params.Branch != "" {
@@ -64,6 +73,11 @@ func QueryTestRuns(params TestRunQueryParams) ([]models.TestRun, int64, error) {
 	// Commit ID过滤（前缀匹配）
 	if params.CommitID != "" {
 		query = query.Where("commit_id LIKE ? OR commit_short_id LIKE ?", params.CommitID+"%", params.CommitID+"%")
+	}
+
+	// 测试类型过滤
+	if params.TestType != "" {
+		query = query.Where("test_type = ?", params.TestType)
 	}
 
 	// 时间范围过滤
@@ -153,14 +167,14 @@ type MasterBranchStats struct {
 
 // GetMasterBranchLatestStats 获取master分支最新的测试统计数据
 func GetMasterBranchLatestStats() (*MasterBranchStats, error) {
-	// 查找master分支最新的已完成测试运行
+	// 查找master分支最新的已完成测试运行（只返回公开的记录）
 	var testRun models.TestRun
-	if err := models.DB.Where("branch_name = ? AND status IN (?)", "master", []models.TestRunStatus{
+	if err := models.DB.Where("branch_name = ? AND status IN (?) AND is_public = ?", "master", []models.TestRunStatus{
 		models.TestRunStatusPassed,
 		models.TestRunStatusFailed,
-	}).Order("created_at DESC").First(&testRun).Error; err != nil {
-		// 如果没有找到已完成的，尝试找运行中的
-		if err := models.DB.Where("branch_name = ?", "master").
+	}, true).Order("created_at DESC").First(&testRun).Error; err != nil {
+		// 如果没有找到已完成的，尝试找运行中的（只返回公开的记录）
+		if err := models.DB.Where("branch_name = ? AND is_public = ?", "master", true).
 			Order("created_at DESC").First(&testRun).Error; err != nil {
 			return nil, fmt.Errorf("no test run found for master branch")
 		}
@@ -436,4 +450,41 @@ func GetDashboardTrend(days int) ([]TrendData, error) {
 	}
 
 	return trendData, nil
+}
+
+// DeleteTestRun 删除测试运行
+func DeleteTestRun(id uint64) error {
+	// 检查测试运行是否存在
+	var testRun models.TestRun
+	if err := models.DB.First(&testRun, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrTestRunNotFound
+		}
+		return fmt.Errorf("failed to get test run: %w", err)
+	}
+
+	// 由于外键约束，删除测试运行会自动删除关联的测例和输出文件
+	if err := models.DB.Delete(&testRun).Error; err != nil {
+		return fmt.Errorf("failed to delete test run: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateTestRunVisibility 更新测试运行的可见性
+func UpdateTestRunVisibility(id uint64, isPublic bool) error {
+	var testRun models.TestRun
+	if err := models.DB.First(&testRun, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrTestRunNotFound
+		}
+		return fmt.Errorf("failed to get test run: %w", err)
+	}
+
+	testRun.IsPublic = isPublic
+	if err := models.DB.Save(&testRun).Error; err != nil {
+		return fmt.Errorf("failed to update test run visibility: %w", err)
+	}
+
+	return nil
 }
