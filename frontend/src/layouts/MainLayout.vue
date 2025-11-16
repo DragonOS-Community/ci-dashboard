@@ -4,7 +4,7 @@
     <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
       <div class="sidebar-header">
         <router-link to="/" class="logo">
-          <div class="logo-icon">🐉</div>
+          <img :src="logoImage" class="logo-icon" alt="DragonOS Logo" />
           <span v-show="!sidebarCollapsed" class="logo-text">DragonOS CI</span>
         </router-link>
       </div>
@@ -98,6 +98,7 @@ import { ref, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAdminStore } from "@/stores/admin";
 import { MessagePlugin } from "tdesign-vue-next";
+import logoImage from "@/assets/dragonos.jpeg";
 
 const router = useRouter();
 const route = useRoute();
@@ -239,12 +240,8 @@ const handleLogout = async () => {
 .logo-icon {
   width: 40px;
   height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+  object-fit: contain;
   border-radius: 10px;
-  font-size: 24px;
 }
 
 .logo-text {

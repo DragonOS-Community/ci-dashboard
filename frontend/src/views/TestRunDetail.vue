@@ -1,18 +1,7 @@
 <template>
   <div class="detail-container">
     <!-- 顶部导航 -->
-    <header class="header">
-      <div class="header-content">
-        <div class="logo" @click="goBack" style="cursor: pointer">
-          <div class="logo-icon">🐉</div>
-          <span class="logo-text">DragonOS CI Dashboard</span>
-        </div>
-        <t-button theme="warning" variant="outline" @click="goToLogin">
-          <t-icon name="user" />
-          管理员登录
-        </t-button>
-      </div>
-    </header>
+    <PublicHeader :show-back="true" @back="goBack" />
 
     <!-- 主内容区 -->
     <main class="main-content">
@@ -301,6 +290,7 @@ import {
 } from "@/api/testRun";
 import { MessagePlugin } from "tdesign-vue-next";
 import TestCaseList from "@/components/TestCaseList.vue";
+import PublicHeader from "@/components/PublicHeader.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -517,10 +507,6 @@ const goBack = () => {
   router.push("/");
 };
 
-const goToLogin = () => {
-  router.push("/admin/login");
-};
-
 const refreshData = async () => {
   await fetchData();
   MessagePlugin.success("数据已刷新");
@@ -552,54 +538,6 @@ onMounted(() => {
 .detail-container {
   min-height: 100vh;
   background-color: #f9fafb;
-}
-
-/* 顶部导航 */
-.header {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.header-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 32px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: opacity 0.2s ease;
-}
-
-.logo:hover {
-  opacity: 0.8;
-}
-
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
-  border-radius: 10px;
-  font-size: 24px;
-}
-
-.logo-text {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2937;
 }
 
 /* 页面标题区域 */
@@ -1002,10 +940,6 @@ onMounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .header-content {
-    padding: 0 16px;
-  }
-
   .main-content {
     padding: 16px;
   }
