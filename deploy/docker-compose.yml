@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: dragonos-ci-app
+    environment:
+      # 数据库配置（从外部环境变量读取）
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_CHARSET: ${DB_CHARSET:-utf8mb4}
+      
+      # 服务器配置
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+      API_PREFIX: /api/v1
+      
+      # 存储配置
+      STORAGE_PATH: /data/uploads
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-104857600}
+      
+      # 安全配置
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS:-24}
+      API_KEY_HASH_SALT: ${API_KEY_HASH_SALT}
+      
+      # CORS 配置
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-*}
+      
+      # 日志配置
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./data/uploads:/data/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - dragonos-ci-network
+
+networks:
+  dragonos-ci-network:
+    driver: bridge
+
