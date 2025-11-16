@@ -129,7 +129,6 @@ const menuItems = [
     items: [
       { path: "/admin/system/api-keys", label: "API密钥", icon: "key" },
       { path: "/admin/system/projects", label: "项目管理", icon: "folder" },
-      { path: "/admin/system/users", label: "用户管理", icon: "user" },
     ],
   },
   {
@@ -175,7 +174,6 @@ const breadcrumbs = computed(() => {
     reports: "报告",
     "api-keys": "API密钥",
     projects: "项目",
-    users: "用户",
     system: "监控",
     statistics: "统计",
     profile: "个人中心",
