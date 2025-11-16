@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // CreateTestCase 创建测例
@@ -25,7 +26,7 @@ func CreateTestCase(testRunID uint64, name string, status models.TestCaseStatus,
 }
 
 // BatchCreateTestCases 批量创建测例
-func BatchCreateTestCases(testRunID uint64, testCases []struct {
+func BatchCreateTestCases(c *gin.Context, testRunID uint64, testCases []struct {
 	Name       string
 	Status     models.TestCaseStatus
 	DurationMs uint32
@@ -48,13 +49,15 @@ func BatchCreateTestCases(testRunID uint64, testCases []struct {
 		})
 	}
 
-	return models.DB.CreateInBatches(cases, 100).Error
+	db := getDB(c)
+	return db.CreateInBatches(cases, 100).Error
 }
 
 // GetTestCasesByTestRunID 根据测试运行ID获取测例列表
-func GetTestCasesByTestRunID(testRunID uint64) ([]models.TestCase, error) {
+func GetTestCasesByTestRunID(c *gin.Context, testRunID uint64) ([]models.TestCase, error) {
 	var testCases []models.TestCase
-	if err := models.DB.Where("test_run_id = ?", testRunID).
+	db := getDB(c)
+	if err := db.Where("test_run_id = ?", testRunID).
 		Order("status DESC, name ASC").
 		Find(&testCases).Error; err != nil {
 		return nil, err

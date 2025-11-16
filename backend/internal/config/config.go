@@ -49,8 +49,9 @@ type APIKeyConfig struct {
 }
 
 type LogConfig struct {
-	Level  string
-	Format string
+	Level    string
+	Format   string
+	FilePath string // 日志文件路径，如果为空则只输出到 stdout
 }
 
 type CORSConfig struct {
@@ -100,6 +101,7 @@ func Load() error {
 
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("log.format", "json")
+	viper.SetDefault("log.file_path", "") // 默认为空，只输出到 stdout
 
 	viper.SetDefault("cors.allow_origins", []string{"http://localhost:3000", "http://localhost:5173"})
 
@@ -137,8 +139,9 @@ func Load() error {
 			HashSalt: getConfigValue("API_KEY_HASH_SALT", "api_key.hash_salt", "change-me-in-production"),
 		},
 		Log: LogConfig{
-			Level:  getConfigValue("LOG_LEVEL", "log.level", "info"),
-			Format: getConfigValue("LOG_FORMAT", "log.format", "json"),
+			Level:    getConfigValue("LOG_LEVEL", "log.level", "info"),
+			Format:   getConfigValue("LOG_FORMAT", "log.format", "json"),
+			FilePath: getConfigValue("LOG_FILE_PATH", "log.file_path", ""),
 		},
 		CORS: CORSConfig{
 			AllowOrigins: getConfigStringSlice("CORS_ALLOW_ORIGINS", "cors.allow_origins", []string{"http://localhost:3000", "http://localhost:5173"}),
@@ -191,6 +194,7 @@ func bindEnvVars() {
 	// 日志配置
 	viper.BindEnv("LOG_LEVEL", "LOG_LEVEL")
 	viper.BindEnv("LOG_FORMAT", "LOG_FORMAT")
+	viper.BindEnv("LOG_FILE_PATH", "LOG_FILE_PATH")
 
 	// CORS配置
 	viper.BindEnv("CORS_ALLOW_ORIGINS", "CORS_ALLOW_ORIGINS")

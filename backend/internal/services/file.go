@@ -10,10 +10,11 @@ import (
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/config"
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // SaveFile 保存文件
-func SaveFile(testRunID uint64, filename string, fileContent io.Reader) (*models.TestOutputFile, error) {
+func SaveFile(c *gin.Context, testRunID uint64, filename string, fileContent io.Reader) (*models.TestOutputFile, error) {
 	// 创建测试运行的文件目录
 	fileDir := filepath.Join(config.AppConfig.Storage.Path, fmt.Sprintf("test_run_%d", testRunID))
 	if err := os.MkdirAll(fileDir, 0755); err != nil {
@@ -54,7 +55,8 @@ func SaveFile(testRunID uint64, filename string, fileContent io.Reader) (*models
 		MimeType:  mimeType,
 	}
 
-	if err := models.DB.Create(outputFile).Error; err != nil {
+	db := getDB(c)
+	if err := db.Create(outputFile).Error; err != nil {
 		// 如果数据库保存失败，删除已创建的文件
 		os.Remove(filePath)
 		return nil, fmt.Errorf("failed to create file record: %w", err)
@@ -64,18 +66,20 @@ func SaveFile(testRunID uint64, filename string, fileContent io.Reader) (*models
 }
 
 // GetFileByID 根据ID获取文件
-func GetFileByID(id uint64) (*models.TestOutputFile, error) {
+func GetFileByID(c *gin.Context, id uint64) (*models.TestOutputFile, error) {
 	var file models.TestOutputFile
-	if err := models.DB.First(&file, id).Error; err != nil {
+	db := getDB(c)
+	if err := db.First(&file, id).Error; err != nil {
 		return nil, err
 	}
 	return &file, nil
 }
 
 // GetFilesByTestRunID 根据测试运行ID获取文件列表
-func GetFilesByTestRunID(testRunID uint64) ([]models.TestOutputFile, error) {
+func GetFilesByTestRunID(c *gin.Context, testRunID uint64) ([]models.TestOutputFile, error) {
 	var files []models.TestOutputFile
-	if err := models.DB.Where("test_run_id = ?", testRunID).
+	db := getDB(c)
+	if err := db.Where("test_run_id = ?", testRunID).
 		Order("created_at DESC").
 		Find(&files).Error; err != nil {
 		return nil, err

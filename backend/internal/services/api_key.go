@@ -7,6 +7,7 @@ import (
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/config"
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -31,9 +32,9 @@ func HashAPIKey(apiKey string) (string, error) {
 	return string(hash), nil
 }
 
-// ValidateAPIKey 验证API Key
+// ValidateAPIKey 验证API Key（用于中间件，可能没有 context）
 func ValidateAPIKey(apiKey string) (*models.APIKey, error) {
-	// 查询所有API Key
+	// 查询所有API Key（中间件调用，使用默认 DB）
 	var apiKeys []models.APIKey
 	if err := models.DB.Find(&apiKeys).Error; err != nil {
 		return nil, err
@@ -51,7 +52,7 @@ func ValidateAPIKey(apiKey string) (*models.APIKey, error) {
 }
 
 // CreateAPIKey 创建API Key
-func CreateAPIKey(name string, projectID *uint64, expiresAt *string) (*models.APIKey, string, error) {
+func CreateAPIKey(c *gin.Context, name string, projectID *uint64, expiresAt *string) (*models.APIKey, string, error) {
 	// 生成新的API Key
 	apiKey, err := GenerateAPIKey()
 	if err != nil {
@@ -76,7 +77,8 @@ func CreateAPIKey(name string, projectID *uint64, expiresAt *string) (*models.AP
 		// 暂时留空，后续可以完善
 	}
 
-	if err := models.DB.Create(newKey).Error; err != nil {
+	db := getDB(c)
+	if err := db.Create(newKey).Error; err != nil {
 		return nil, "", fmt.Errorf("failed to create API key: %w", err)
 	}
 
@@ -84,14 +86,16 @@ func CreateAPIKey(name string, projectID *uint64, expiresAt *string) (*models.AP
 }
 
 // DeleteAPIKey 删除API Key
-func DeleteAPIKey(id uint64) error {
-	return models.DB.Delete(&models.APIKey{}, id).Error
+func DeleteAPIKey(c *gin.Context, id uint64) error {
+	db := getDB(c)
+	return db.Delete(&models.APIKey{}, id).Error
 }
 
 // ListAPIKeys 列出所有API Key
-func ListAPIKeys() ([]models.APIKey, error) {
+func ListAPIKeys(c *gin.Context) ([]models.APIKey, error) {
 	var keys []models.APIKey
-	if err := models.DB.Preload("Project").Find(&keys).Error; err != nil {
+	db := getDB(c)
+	if err := db.Preload("Project").Find(&keys).Error; err != nil {
 		return nil, err
 	}
 	return keys, nil

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -23,7 +24,7 @@ type TestRunQueryParams struct {
 }
 
 // CreateTestRun 创建测试运行
-func CreateTestRun(projectID uint64, branchName, commitID, commitShortID, testType string) (*models.TestRun, error) {
+func CreateTestRun(c *gin.Context, projectID uint64, branchName, commitID, commitShortID, testType string) (*models.TestRun, error) {
 	testRun := &models.TestRun{
 		ProjectID:     projectID,
 		BranchName:    branchName,
@@ -33,7 +34,8 @@ func CreateTestRun(projectID uint64, branchName, commitID, commitShortID, testTy
 		Status:        models.TestRunStatusRunning,
 	}
 
-	if err := models.DB.Create(testRun).Error; err != nil {
+	db := getDB(c)
+	if err := db.Create(testRun).Error; err != nil {
 		return nil, fmt.Errorf("failed to create test run: %w", err)
 	}
 
@@ -41,9 +43,10 @@ func CreateTestRun(projectID uint64, branchName, commitID, commitShortID, testTy
 }
 
 // GetTestRunByID 根据ID获取测试运行
-func GetTestRunByID(id uint64) (*models.TestRun, error) {
+func GetTestRunByID(c *gin.Context, id uint64) (*models.TestRun, error) {
 	var testRun models.TestRun
-	if err := models.DB.Preload("Project").
+	db := getDB(c)
+	if err := db.Preload("Project").
 		Preload("TestCases").
 		Preload("OutputFiles").
 		First(&testRun, id).Error; err != nil {
@@ -54,11 +57,12 @@ func GetTestRunByID(id uint64) (*models.TestRun, error) {
 
 // QueryTestRuns 查询测试运行列表
 // includePrivate 为true时包含私有记录（管理员使用），为false时只返回公开记录（公开接口使用）
-func QueryTestRuns(params TestRunQueryParams, includePrivate bool) ([]models.TestRun, int64, error) {
+func QueryTestRuns(c *gin.Context, params TestRunQueryParams, includePrivate bool) ([]models.TestRun, int64, error) {
 	var testRuns []models.TestRun
 	var total int64
 
-	query := models.DB.Model(&models.TestRun{}).Preload("Project")
+	db := getDB(c)
+	query := db.Model(&models.TestRun{}).Preload("Project")
 
 	// 如果不是管理员查询，只返回公开的记录
 	if !includePrivate {
@@ -127,25 +131,27 @@ func QueryTestRuns(params TestRunQueryParams, includePrivate bool) ([]models.Tes
 }
 
 // UpdateTestRunStatus 更新测试运行状态
-func UpdateTestRunStatus(id uint64, status models.TestRunStatus) error {
-	testRun, err := GetTestRunByID(id)
+func UpdateTestRunStatus(c *gin.Context, id uint64, status models.TestRunStatus) error {
+	testRun, err := GetTestRunByID(c, id)
 	if err != nil {
 		return err
 	}
 
 	testRun.Complete(status)
-	return models.DB.Save(testRun).Error
+	db := getDB(c)
+	return db.Save(testRun).Error
 }
 
 // CompleteTestRun 完成测试运行
-func CompleteTestRun(id uint64, status models.TestRunStatus) error {
-	testRun, err := GetTestRunByID(id)
+func CompleteTestRun(c *gin.Context, id uint64, status models.TestRunStatus) error {
+	testRun, err := GetTestRunByID(c, id)
 	if err != nil {
 		return err
 	}
 
 	testRun.Complete(status)
-	return models.DB.Save(testRun).Error
+	db := getDB(c)
+	return db.Save(testRun).Error
 }
 
 // MasterBranchStats master分支统计信息
@@ -166,15 +172,17 @@ type MasterBranchStats struct {
 }
 
 // GetMasterBranchLatestStats 获取master分支最新的测试统计数据
-func GetMasterBranchLatestStats() (*MasterBranchStats, error) {
+func GetMasterBranchLatestStats(c *gin.Context) (*MasterBranchStats, error) {
+	db := getDB(c)
+
 	// 查找master分支最新的已完成测试运行（只返回公开的记录）
 	var testRun models.TestRun
-	if err := models.DB.Where("branch_name = ? AND status IN (?) AND is_public = ?", "master", []models.TestRunStatus{
+	if err := db.Where("branch_name = ? AND status IN (?) AND is_public = ?", "master", []models.TestRunStatus{
 		models.TestRunStatusPassed,
 		models.TestRunStatusFailed,
 	}, true).Order("created_at DESC").First(&testRun).Error; err != nil {
 		// 如果没有找到已完成的，尝试找运行中的（只返回公开的记录）
-		if err := models.DB.Where("branch_name = ? AND is_public = ?", "master", true).
+		if err := db.Where("branch_name = ? AND is_public = ?", "master", true).
 			Order("created_at DESC").First(&testRun).Error; err != nil {
 			return nil, fmt.Errorf("no test run found for master branch")
 		}
@@ -184,26 +192,26 @@ func GetMasterBranchLatestStats() (*MasterBranchStats, error) {
 	var totalCases, passedCases, failedCases, skippedCases int64
 	var duration int64
 
-	if err := models.DB.Model(&models.TestCase{}).
+	if err := db.Model(&models.TestCase{}).
 		Where("test_run_id = ?", testRun.ID).
 		Count(&totalCases).Error; err != nil {
 		return nil, fmt.Errorf("failed to count test cases: %w", err)
 	}
 
 	if totalCases > 0 {
-		if err := models.DB.Model(&models.TestCase{}).
+		if err := db.Model(&models.TestCase{}).
 			Where("test_run_id = ? AND status = ?", testRun.ID, models.TestCaseStatusPassed).
 			Count(&passedCases).Error; err != nil {
 			return nil, fmt.Errorf("failed to count passed cases: %w", err)
 		}
 
-		if err := models.DB.Model(&models.TestCase{}).
+		if err := db.Model(&models.TestCase{}).
 			Where("test_run_id = ? AND status = ?", testRun.ID, models.TestCaseStatusFailed).
 			Count(&failedCases).Error; err != nil {
 			return nil, fmt.Errorf("failed to count failed cases: %w", err)
 		}
 
-		if err := models.DB.Model(&models.TestCase{}).
+		if err := db.Model(&models.TestCase{}).
 			Where("test_run_id = ? AND status = ?", testRun.ID, models.TestCaseStatusSkipped).
 			Count(&skippedCases).Error; err != nil {
 			return nil, fmt.Errorf("failed to count skipped cases: %w", err)
@@ -213,7 +221,7 @@ func GetMasterBranchLatestStats() (*MasterBranchStats, error) {
 		var result struct {
 			TotalDuration int64
 		}
-		if err := models.DB.Model(&models.TestCase{}).
+		if err := db.Model(&models.TestCase{}).
 			Select("COALESCE(SUM(duration_ms), 0) as total_duration").
 			Where("test_run_id = ?", testRun.ID).
 			Scan(&result).Error; err != nil {
@@ -272,7 +280,9 @@ type TrendData struct {
 }
 
 // GetDashboardStats 获取仪表板统计数据
-func GetDashboardStats() (*DashboardStats, error) {
+func GetDashboardStats(c *gin.Context) (*DashboardStats, error) {
+	db := getDB(c)
+
 	now := time.Now()
 	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	todayEnd := todayStart.Add(24 * time.Hour)
@@ -288,14 +298,14 @@ func GetDashboardStats() (*DashboardStats, error) {
 
 	// 1. 总测试数（所有测试运行）
 	var totalTests int64
-	if err := models.DB.Model(&models.TestRun{}).Count(&totalTests).Error; err != nil {
+	if err := db.Model(&models.TestRun{}).Count(&totalTests).Error; err != nil {
 		return nil, fmt.Errorf("failed to count total tests: %w", err)
 	}
 	stats.TotalTests = totalTests
 
 	// 上期总测试数（7天前）
 	var totalTestsPrev int64
-	if err := models.DB.Model(&models.TestRun{}).
+	if err := db.Model(&models.TestRun{}).
 		Where("created_at < ?", lastWeekStart).
 		Count(&totalTestsPrev).Error; err != nil {
 		return nil, fmt.Errorf("failed to count previous total tests: %w", err)
@@ -304,7 +314,7 @@ func GetDashboardStats() (*DashboardStats, error) {
 
 	// 2. 今日运行
 	var todayRuns int64
-	if err := models.DB.Model(&models.TestRun{}).
+	if err := db.Model(&models.TestRun{}).
 		Where("created_at >= ? AND created_at < ?", todayStart, todayEnd).
 		Count(&todayRuns).Error; err != nil {
 		return nil, fmt.Errorf("failed to count today runs: %w", err)
@@ -313,7 +323,7 @@ func GetDashboardStats() (*DashboardStats, error) {
 
 	// 上期今日运行（昨天）
 	var todayRunsPrev int64
-	if err := models.DB.Model(&models.TestRun{}).
+	if err := db.Model(&models.TestRun{}).
 		Where("created_at >= ? AND created_at < ?", yesterdayStart, yesterdayEnd).
 		Count(&todayRunsPrev).Error; err != nil {
 		return nil, fmt.Errorf("failed to count previous today runs: %w", err)
@@ -322,7 +332,7 @@ func GetDashboardStats() (*DashboardStats, error) {
 
 	// 3. 成功率统计（所有已完成的测试运行）
 	var completedRuns []models.TestRun
-	if err := models.DB.Where("status IN (?)", []models.TestRunStatus{
+	if err := db.Where("status IN (?)", []models.TestRunStatus{
 		models.TestRunStatusPassed,
 		models.TestRunStatusFailed,
 	}).Find(&completedRuns).Error; err != nil {
@@ -340,17 +350,17 @@ func GetDashboardStats() (*DashboardStats, error) {
 
 	// 统计测例的成功/失败/跳过数
 	var totalSuccessCases, totalFailedCases, totalSkippedCases int64
-	if err := models.DB.Model(&models.TestCase{}).
+	if err := db.Model(&models.TestCase{}).
 		Where("status = ?", models.TestCaseStatusPassed).
 		Count(&totalSuccessCases).Error; err != nil {
 		return nil, fmt.Errorf("failed to count success cases: %w", err)
 	}
-	if err := models.DB.Model(&models.TestCase{}).
+	if err := db.Model(&models.TestCase{}).
 		Where("status = ?", models.TestCaseStatusFailed).
 		Count(&totalFailedCases).Error; err != nil {
 		return nil, fmt.Errorf("failed to count failed cases: %w", err)
 	}
-	if err := models.DB.Model(&models.TestCase{}).
+	if err := db.Model(&models.TestCase{}).
 		Where("status = ?", models.TestCaseStatusSkipped).
 		Count(&totalSkippedCases).Error; err != nil {
 		return nil, fmt.Errorf("failed to count skipped cases: %w", err)
@@ -369,7 +379,7 @@ func GetDashboardStats() (*DashboardStats, error) {
 	// 上期成功率（7天前的数据）
 	var prevSuccessCases, prevFailedCases, prevSkippedCases int64
 	var prevTestRuns []models.TestRun
-	if err := models.DB.Where("created_at < ? AND status IN (?)", lastWeekStart, []models.TestRunStatus{
+	if err := db.Where("created_at < ? AND status IN (?)", lastWeekStart, []models.TestRunStatus{
 		models.TestRunStatusPassed,
 		models.TestRunStatusFailed,
 	}).Find(&prevTestRuns).Error; err == nil {
@@ -378,13 +388,13 @@ func GetDashboardStats() (*DashboardStats, error) {
 			prevRunIDs = append(prevRunIDs, run.ID)
 		}
 		if len(prevRunIDs) > 0 {
-			models.DB.Model(&models.TestCase{}).
+			db.Model(&models.TestCase{}).
 				Where("test_run_id IN (?) AND status = ?", prevRunIDs, models.TestCaseStatusPassed).
 				Count(&prevSuccessCases)
-			models.DB.Model(&models.TestCase{}).
+			db.Model(&models.TestCase{}).
 				Where("test_run_id IN (?) AND status = ?", prevRunIDs, models.TestCaseStatusFailed).
 				Count(&prevFailedCases)
-			models.DB.Model(&models.TestCase{}).
+			db.Model(&models.TestCase{}).
 				Where("test_run_id IN (?) AND status = ?", prevRunIDs, models.TestCaseStatusSkipped).
 				Count(&prevSkippedCases)
 		}
@@ -398,7 +408,7 @@ func GetDashboardStats() (*DashboardStats, error) {
 	var avgDurationResult struct {
 		AvgDuration float64
 	}
-	if err := models.DB.Model(&models.TestCase{}).
+	if err := db.Model(&models.TestCase{}).
 		Select("COALESCE(AVG(duration_ms), 0) / 1000.0 as avg_duration").
 		Scan(&avgDurationResult).Error; err != nil {
 		return nil, fmt.Errorf("failed to calculate avg duration: %w", err)
@@ -409,7 +419,7 @@ func GetDashboardStats() (*DashboardStats, error) {
 	var avgDurationPrevResult struct {
 		AvgDuration float64
 	}
-	if err := models.DB.Model(&models.TestCase{}).
+	if err := db.Model(&models.TestCase{}).
 		Joins("JOIN test_runs ON test_cases.test_run_id = test_runs.id").
 		Where("test_runs.created_at < ?", lastWeekStart).
 		Select("COALESCE(AVG(test_cases.duration_ms), 0) / 1000.0 as avg_duration").
@@ -421,7 +431,9 @@ func GetDashboardStats() (*DashboardStats, error) {
 }
 
 // GetDashboardTrend 获取仪表板趋势数据
-func GetDashboardTrend(days int) ([]TrendData, error) {
+func GetDashboardTrend(c *gin.Context, days int) ([]TrendData, error) {
+	db := getDB(c)
+
 	now := time.Now()
 	startDate := now.AddDate(0, 0, -days)
 
@@ -432,7 +444,7 @@ func GetDashboardTrend(days int) ([]TrendData, error) {
 
 	// 根据数据库类型选择日期格式化函数
 	// MySQL使用DATE函数
-	if err := models.DB.Model(&models.TestRun{}).
+	if err := db.Model(&models.TestRun{}).
 		Select("DATE(created_at) as date, COUNT(*) as count").
 		Where("created_at >= ?", startDate).
 		Group("DATE(created_at)").
@@ -453,10 +465,12 @@ func GetDashboardTrend(days int) ([]TrendData, error) {
 }
 
 // DeleteTestRun 删除测试运行
-func DeleteTestRun(id uint64) error {
+func DeleteTestRun(c *gin.Context, id uint64) error {
+	db := getDB(c)
+
 	// 检查测试运行是否存在
 	var testRun models.TestRun
-	if err := models.DB.First(&testRun, id).Error; err != nil {
+	if err := db.First(&testRun, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrTestRunNotFound
 		}
@@ -464,7 +478,7 @@ func DeleteTestRun(id uint64) error {
 	}
 
 	// 由于外键约束，删除测试运行会自动删除关联的测例和输出文件
-	if err := models.DB.Delete(&testRun).Error; err != nil {
+	if err := db.Delete(&testRun).Error; err != nil {
 		return fmt.Errorf("failed to delete test run: %w", err)
 	}
 
@@ -472,9 +486,11 @@ func DeleteTestRun(id uint64) error {
 }
 
 // UpdateTestRunVisibility 更新测试运行的可见性
-func UpdateTestRunVisibility(id uint64, isPublic bool) error {
+func UpdateTestRunVisibility(c *gin.Context, id uint64, isPublic bool) error {
+	db := getDB(c)
+
 	var testRun models.TestRun
-	if err := models.DB.First(&testRun, id).Error; err != nil {
+	if err := db.First(&testRun, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrTestRunNotFound
 		}
@@ -482,7 +498,7 @@ func UpdateTestRunVisibility(id uint64, isPublic bool) error {
 	}
 
 	testRun.IsPublic = isPublic
-	if err := models.DB.Save(&testRun).Error; err != nil {
+	if err := db.Save(&testRun).Error; err != nil {
 		return fmt.Errorf("failed to update test run visibility: %w", err)
 	}
 

@@ -18,14 +18,24 @@ func SetupRouter() *gin.Engine {
 
 	r := gin.New()
 
-	// 全局中间件
+	// 全局中间件（顺序很重要）
+	r.Use(middleware.RequestID()) // 首先添加 RequestID，确保后续中间件都能获取到
 	r.Use(middleware.Logger())
 	r.Use(middleware.Recovery())
 	r.Use(middleware.CORS())
 
 	// 健康检查
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
+		requestID := ""
+		if id, exists := c.Get("request_id"); exists {
+			if rid, ok := id.(string); ok {
+				requestID = rid
+			}
+		}
+		c.JSON(200, gin.H{
+			"status":     "ok",
+			"request_id": requestID,
+		})
 	})
 
 	// API路由组

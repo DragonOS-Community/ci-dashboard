@@ -127,7 +127,7 @@ func interactiveCreate(reader *bufio.Reader) {
 		role = models.UserRoleAdmin
 	}
 
-	user, err := services.CreateUser(username, password, role)
+	user, err := services.CreateUser(nil, username, password, role)
 	if err != nil {
 		fmt.Printf("创建用户失败: %v\n", err)
 		return
@@ -211,7 +211,7 @@ func handleCreate() {
 		log.Fatal("Role must be 'admin' or 'user'")
 	}
 
-	user, err := services.CreateUser(*username, password, role)
+	user, err := services.CreateUser(nil, *username, password, role)
 	if err != nil {
 		log.Fatalf("Failed to create user: %v", err)
 	}

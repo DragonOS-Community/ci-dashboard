@@ -13,6 +13,7 @@ import (
 	"github.com/dragonos/dragonos-ci-dashboard/internal/api"
 	"github.com/dragonos/dragonos-ci-dashboard/internal/config"
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
+	"github.com/dragonos/dragonos-ci-dashboard/pkg/logger"
 )
 
 func main() {
@@ -20,6 +21,12 @@ func main() {
 	if err := config.Load(); err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
+
+	// 初始化日志系统
+	if err := logger.InitLogger(); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer logger.CloseLogger()
 
 	// 初始化数据库
 	if err := models.InitDatabase(); err != nil {

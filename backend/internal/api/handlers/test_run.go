@@ -7,6 +7,7 @@ import (
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
 	"github.com/dragonos/dragonos-ci-dashboard/internal/services"
+	"github.com/dragonos/dragonos-ci-dashboard/pkg/logger"
 	"github.com/dragonos/dragonos-ci-dashboard/pkg/response"
 	"github.com/gin-gonic/gin"
 )
@@ -52,12 +53,19 @@ func GetTestRuns(c *gin.Context) {
 		}
 	}
 
+	// 记录查询参数
+	logger.LogInfo(c, logger.ModuleHandler, "query_test_runs branch=%s commit_id=%s status=%s page=%d page_size=%d",
+		params.Branch, params.CommitID, params.Status, params.Page, params.PageSize)
+
 	// 公开接口只返回公开的记录
-	testRuns, total, err := services.QueryTestRuns(params, false)
+	testRuns, total, err := services.QueryTestRuns(c, params, false)
 	if err != nil {
+		logger.LogError(c, logger.ModuleHandler, err, "query_test_runs failed")
 		response.InternalServerError(c, "Failed to query test runs")
 		return
 	}
+
+	logger.LogInfo(c, logger.ModuleHandler, "query_test_runs success total=%d count=%d", total, len(testRuns))
 
 	response.Success(c, gin.H{
 		"test_runs": testRuns,
@@ -72,21 +80,29 @@ func GetTestRunByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
+		logger.LogWarn(c, logger.ModuleHandler, "invalid_test_run_id id=%s error=%s", idStr, err.Error())
 		response.BadRequest(c, "Invalid test run ID")
 		return
 	}
 
-	testRun, err := services.GetTestRunByID(id)
+	logger.LogInfo(c, logger.ModuleHandler, "get_test_run_by_id test_run_id=%d", id)
+
+	testRun, err := services.GetTestRunByID(c, id)
 	if err != nil {
+		logger.LogWarn(c, logger.ModuleHandler, "test_run_not_found test_run_id=%d", id)
 		response.NotFound(c, "Test run not found")
 		return
 	}
 
 	// 公开接口只返回公开的记录
 	if !testRun.IsPublic {
+		logger.LogWarn(c, logger.ModuleHandler, "test_run_not_public test_run_id=%d", id)
 		response.NotFound(c, "Test run not found")
 		return
 	}
+
+	logger.LogInfo(c, logger.ModuleHandler, "get_test_run_success test_run_id=%d branch=%s status=%s",
+		id, testRun.BranchName, testRun.Status)
 
 	response.Success(c, testRun)
 }
@@ -96,38 +112,50 @@ func GetTestCasesByTestRunID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
+		logger.LogWarn(c, logger.ModuleHandler, "invalid_test_run_id id=%s error=%s", idStr, err.Error())
 		response.BadRequest(c, "Invalid test run ID")
 		return
 	}
 
+	logger.LogInfo(c, logger.ModuleHandler, "get_test_cases_by_test_run_id test_run_id=%d", id)
+
 	// 检查测试运行是否存在且为公开
-	testRun, err := services.GetTestRunByID(id)
+	testRun, err := services.GetTestRunByID(c, id)
 	if err != nil {
+		logger.LogWarn(c, logger.ModuleHandler, "test_run_not_found test_run_id=%d", id)
 		response.NotFound(c, "Test run not found")
 		return
 	}
 	if !testRun.IsPublic {
+		logger.LogWarn(c, logger.ModuleHandler, "test_run_not_public test_run_id=%d", id)
 		response.NotFound(c, "Test run not found")
 		return
 	}
 
-	testCases, err := services.GetTestCasesByTestRunID(id)
+	testCases, err := services.GetTestCasesByTestRunID(c, id)
 	if err != nil {
+		logger.LogError(c, logger.ModuleHandler, err, "get_test_cases failed test_run_id=%d", id)
 		response.InternalServerError(c, "Failed to get test cases")
 		return
 	}
+
+	logger.LogInfo(c, logger.ModuleHandler, "get_test_cases_success test_run_id=%d count=%d", id, len(testCases))
 
 	response.Success(c, testCases)
 }
 
 // GetMasterBranchStats 获取master分支最新测试统计数据（公开接口）
 func GetMasterBranchStats(c *gin.Context) {
-	stats, err := services.GetMasterBranchLatestStats()
+	logger.LogInfo(c, logger.ModuleHandler, "get_master_branch_stats")
+
+	stats, err := services.GetMasterBranchLatestStats(c)
 	if err != nil {
+		logger.LogWarn(c, logger.ModuleHandler, "no_master_branch_stats found")
 		response.NotFound(c, "No test run found for master branch")
 		return
 	}
 
+	logger.LogInfo(c, logger.ModuleHandler, "get_master_branch_stats success")
 	response.Success(c, stats)
 }
 
@@ -148,18 +176,24 @@ func CreateTestRun(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.LogWarn(c, logger.ModuleHandler, "create_test_run invalid_request error=%s", err.Error())
 		response.BadRequest(c, err.Error())
 		return
 	}
 
+	logger.LogInfo(c, logger.ModuleHandler, "create_test_run branch=%s commit_id=%s test_type=%s test_cases_count=%d",
+		req.BranchName, req.CommitID, req.TestType, len(req.TestCases))
+
 	// 验证 commit_id 最少8位
 	if len(req.CommitID) < 8 {
+		logger.LogWarn(c, logger.ModuleHandler, "create_test_run invalid_commit_id commit_id=%s", req.CommitID)
 		response.BadRequest(c, "commit_id must be at least 8 characters")
 		return
 	}
 
 	// 验证 test_type 必须为 gvisor
 	if req.TestType != string(models.TestTypeGvisor) {
+		logger.LogWarn(c, logger.ModuleHandler, "create_test_run invalid_test_type test_type=%s", req.TestType)
 		response.BadRequest(c, fmt.Sprintf("test_type must be '%s'", models.TestTypeGvisor))
 		return
 	}
@@ -178,10 +212,14 @@ func CreateTestRun(c *gin.Context) {
 	const maxLogLength = 2048
 	for i := range req.TestCases {
 		if len(req.TestCases[i].ErrorLog) > maxLogLength {
+			logger.LogWarn(c, logger.ModuleHandler, "create_test_run error_log_too_long test_case=%s length=%d",
+				req.TestCases[i].Name, len(req.TestCases[i].ErrorLog))
 			response.BadRequest(c, "error_log exceeds maximum length of 2048 characters")
 			return
 		}
 		if len(req.TestCases[i].DebugLog) > maxLogLength {
+			logger.LogWarn(c, logger.ModuleHandler, "create_test_run debug_log_too_long test_case=%s length=%d",
+				req.TestCases[i].Name, len(req.TestCases[i].DebugLog))
 			response.BadRequest(c, "debug_log exceeds maximum length of 2048 characters")
 			return
 		}
@@ -189,6 +227,7 @@ func CreateTestRun(c *gin.Context) {
 
 	// 创建测试运行
 	testRun, err := services.CreateTestRun(
+		c,
 		defaultProjectID,
 		req.BranchName,
 		req.CommitID,
@@ -196,9 +235,13 @@ func CreateTestRun(c *gin.Context) {
 		testType,
 	)
 	if err != nil {
+		logger.LogError(c, logger.ModuleHandler, err, "create_test_run failed branch=%s commit_id=%s",
+			req.BranchName, req.CommitID)
 		response.InternalServerError(c, "Failed to create test run")
 		return
 	}
+
+	logger.LogInfo(c, logger.ModuleHandler, "create_test_run success test_run_id=%d", testRun.ID)
 
 	// 批量创建测例
 	if len(req.TestCases) > 0 {
@@ -226,10 +269,15 @@ func CreateTestRun(c *gin.Context) {
 			})
 		}
 
-		if err := services.BatchCreateTestCases(testRun.ID, testCases); err != nil {
+		if err := services.BatchCreateTestCases(c, testRun.ID, testCases); err != nil {
+			logger.LogError(c, logger.ModuleHandler, err, "batch_create_test_cases failed test_run_id=%d count=%d",
+				testRun.ID, len(testCases))
 			response.InternalServerError(c, "Failed to create test cases")
 			return
 		}
+
+		logger.LogInfo(c, logger.ModuleHandler, "batch_create_test_cases success test_run_id=%d count=%d",
+			testRun.ID, len(testCases))
 
 		// 根据测例状态更新测试运行状态
 		allPassed := true
@@ -260,10 +308,14 @@ func CreateTestRun(c *gin.Context) {
 
 		testRun.Complete(finalStatus)
 		models.DB.Save(testRun)
+
+		logger.LogInfo(c, logger.ModuleHandler, "test_run_completed test_run_id=%d status=%s",
+			testRun.ID, finalStatus)
 	}
 
 	// 重新加载关联数据
-	testRun, _ = services.GetTestRunByID(testRun.ID)
+	testRun, _ = services.GetTestRunByID(c, testRun.ID)
 
+	logger.LogInfo(c, logger.ModuleHandler, "create_test_run completed test_run_id=%d", testRun.ID)
 	response.Success(c, testRun)
 }

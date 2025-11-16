@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/config"
+	"github.com/dragonos/dragonos-ci-dashboard/pkg/logger"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormLogger "gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
@@ -15,9 +16,27 @@ var DB *gorm.DB
 func InitDatabase() error {
 	dsn := config.AppConfig.Database.DSN()
 
+	// 创建自定义 GORM logger
+	gormLog := logger.NewGormLogger()
+
+	// 根据配置的日志级别设置 GORM logger 级别
+	var logLevel gormLogger.LogLevel
+	switch config.AppConfig.Log.Level {
+	case "debug":
+		logLevel = gormLogger.Info // GORM 的 Info 级别对应详细的 SQL 日志
+	case "info":
+		logLevel = gormLogger.Info
+	case "warn", "warning":
+		logLevel = gormLogger.Warn
+	case "error":
+		logLevel = gormLogger.Error
+	default:
+		logLevel = gormLogger.Info
+	}
+
 	var err error
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: gormLog.LogMode(logLevel),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)

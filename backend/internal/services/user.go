@@ -5,14 +5,17 @@ import (
 	"fmt"
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 // CreateUser 创建用户
-func CreateUser(username, password string, role models.UserRole) (*models.User, error) {
+func CreateUser(c *gin.Context, username, password string, role models.UserRole) (*models.User, error) {
+	db := getDB(c)
+
 	// 检查用户名是否已存在（使用Count避免产生record not found日志）
 	var count int64
-	if err := models.DB.Model(&models.User{}).Where("username = ?", username).Count(&count).Error; err != nil {
+	if err := db.Model(&models.User{}).Where("username = ?", username).Count(&count).Error; err != nil {
 		return nil, fmt.Errorf("failed to check username: %w", err)
 	}
 	if count > 0 {
@@ -31,14 +34,14 @@ func CreateUser(username, password string, role models.UserRole) (*models.User, 
 		Role:         role,
 	}
 
-	if err := models.DB.Create(user).Error; err != nil {
+	if err := db.Create(user).Error; err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
 	return user, nil
 }
 
-// AuthenticateUser 用户认证
+// AuthenticateUser 用户认证（用于登录，可能没有 context）
 func AuthenticateUser(username, password string) (*models.User, error) {
 	var user models.User
 	if err := models.DB.Where("username = ?", username).First(&user).Error; err != nil {
@@ -56,9 +59,10 @@ func AuthenticateUser(username, password string) (*models.User, error) {
 }
 
 // GetUserByID 根据ID获取用户
-func GetUserByID(id uint64) (*models.User, error) {
+func GetUserByID(c *gin.Context, id uint64) (*models.User, error) {
 	var user models.User
-	if err := models.DB.First(&user, id).Error; err != nil {
+	db := getDB(c)
+	if err := db.First(&user, id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -96,8 +100,8 @@ func UpdateUserPassword(username, newPassword string) error {
 }
 
 // UpdateUserPasswordByID 根据ID更新用户密码
-func UpdateUserPasswordByID(id uint64, newPassword string) error {
-	user, err := GetUserByID(id)
+func UpdateUserPasswordByID(c *gin.Context, id uint64, newPassword string) error {
+	user, err := GetUserByID(c, id)
 	if err != nil {
 		return fmt.Errorf("user not found: %w", err)
 	}
@@ -110,7 +114,8 @@ func UpdateUserPasswordByID(id uint64, newPassword string) error {
 
 	// 更新密码
 	user.PasswordHash = passwordHash
-	if err := models.DB.Save(user).Error; err != nil {
+	db := getDB(c)
+	if err := db.Save(user).Error; err != nil {
 		return fmt.Errorf("failed to update password: %w", err)
 	}
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
 	"github.com/dragonos/dragonos-ci-dashboard/internal/services"
+	"github.com/dragonos/dragonos-ci-dashboard/pkg/logger"
 	"github.com/dragonos/dragonos-ci-dashboard/pkg/response"
 	"github.com/gin-gonic/gin"
 )
@@ -18,20 +19,27 @@ func AdminLogin(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.LogWarn(c, logger.ModuleHandler, "admin_login invalid_request error=%s", err.Error())
 		response.BadRequest(c, err.Error())
 		return
 	}
 
+	logger.LogInfo(c, logger.ModuleHandler, "admin_login username=%s", req.Username)
+
 	// 认证用户
 	user, err := services.AuthenticateUser(req.Username, req.Password)
 	if err != nil {
+		logger.LogWarn(c, logger.ModuleHandler, "admin_login failed username=%s", req.Username)
 		response.Unauthorized(c, "Invalid username or password")
 		return
 	}
 
+	logger.LogInfo(c, logger.ModuleHandler, "admin_login success user_id=%d username=%s", user.ID, user.Username)
+
 	// 生成JWT token
 	token, err := services.GenerateJWT(user.ID, user.Username, string(user.Role))
 	if err != nil {
+		logger.LogError(c, logger.ModuleHandler, err, "admin_login generate_token failed user_id=%d", user.ID)
 		response.InternalServerError(c, "Failed to generate token")
 		return
 	}
@@ -53,9 +61,12 @@ func AdminRegister(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.LogWarn(c, logger.ModuleHandler, "admin_register invalid_request error=%s", err.Error())
 		response.BadRequest(c, err.Error())
 		return
 	}
+
+	logger.LogInfo(c, logger.ModuleHandler, "admin_register username=%s role=%s", req.Username, req.Role)
 
 	// 默认角色为admin
 	role := models.UserRoleAdmin
@@ -64,15 +75,19 @@ func AdminRegister(c *gin.Context) {
 	}
 
 	// 创建用户
-	user, err := services.CreateUser(req.Username, req.Password, role)
+	user, err := services.CreateUser(c, req.Username, req.Password, role)
 	if err != nil {
 		if err.Error() == "username already exists" {
+			logger.LogWarn(c, logger.ModuleHandler, "admin_register username_exists username=%s", req.Username)
 			response.BadRequest(c, "Username already exists")
 			return
 		}
+		logger.LogError(c, logger.ModuleHandler, err, "admin_register failed username=%s", req.Username)
 		response.InternalServerError(c, "Failed to create user")
 		return
 	}
+
+	logger.LogInfo(c, logger.ModuleHandler, "admin_register success user_id=%d username=%s", user.ID, user.Username)
 
 	response.Success(c, gin.H{
 		"user_id":  user.ID,
@@ -84,7 +99,7 @@ func AdminRegister(c *gin.Context) {
 
 // GetAPIKeys 获取API密钥列表
 func GetAPIKeys(c *gin.Context) {
-	keys, err := services.ListAPIKeys()
+	keys, err := services.ListAPIKeys(c)
 	if err != nil {
 		response.InternalServerError(c, "Failed to get API keys")
 		return
@@ -112,7 +127,7 @@ func CreateAPIKey(c *gin.Context) {
 	}
 
 	// 创建API密钥（expiresAt 直接使用请求中的字符串）
-	apiKey, key, err := services.CreateAPIKey(req.Name, req.ProjectID, req.ExpiresAt)
+	apiKey, key, err := services.CreateAPIKey(c, req.Name, req.ProjectID, req.ExpiresAt)
 	if err != nil {
 		response.InternalServerError(c, "Failed to create API key")
 		return
@@ -137,7 +152,7 @@ func DeleteAPIKey(c *gin.Context) {
 		return
 	}
 
-	if err := services.DeleteAPIKey(id); err != nil {
+	if err := services.DeleteAPIKey(c, id); err != nil {
 		response.InternalServerError(c, "Failed to delete API key")
 		return
 	}
@@ -162,7 +177,7 @@ func GetProfile(c *gin.Context) {
 	}
 
 	// 获取用户信息
-	user, err := services.GetUserByID(id)
+	user, err := services.GetUserByID(c, id)
 	if err != nil {
 		response.NotFound(c, "User not found")
 		return
@@ -211,7 +226,7 @@ func UpdatePassword(c *gin.Context) {
 	}
 
 	// 更新密码
-	if err := services.UpdateUserPasswordByID(user.ID, req.NewPassword); err != nil {
+	if err := services.UpdateUserPasswordByID(c, user.ID, req.NewPassword); err != nil {
 		response.InternalServerError(c, "Failed to update password")
 		return
 	}
@@ -223,7 +238,7 @@ func UpdatePassword(c *gin.Context) {
 
 // GetDashboardStats 获取仪表板统计数据（管理接口）
 func GetDashboardStats(c *gin.Context) {
-	stats, err := services.GetDashboardStats()
+	stats, err := services.GetDashboardStats(c)
 	if err != nil {
 		response.InternalServerError(c, "Failed to get dashboard stats")
 		return
@@ -245,7 +260,7 @@ func GetDashboardTrend(c *gin.Context) {
 		days = 365
 	}
 
-	trendData, err := services.GetDashboardTrend(days)
+	trendData, err := services.GetDashboardTrend(c, days)
 	if err != nil {
 		response.InternalServerError(c, "Failed to get dashboard trend")
 		return
@@ -256,7 +271,7 @@ func GetDashboardTrend(c *gin.Context) {
 
 // GetProjects 获取项目列表
 func GetProjects(c *gin.Context) {
-	projects, err := services.ListProjects()
+	projects, err := services.ListProjects(c)
 	if err != nil {
 		response.InternalServerError(c, "Failed to get projects")
 		return
@@ -274,7 +289,7 @@ func GetProjectByID(c *gin.Context) {
 		return
 	}
 
-	project, err := services.GetProjectByID(id)
+	project, err := services.GetProjectByID(c, id)
 	if err != nil {
 		response.NotFound(c, "Project not found")
 		return
@@ -295,7 +310,7 @@ func CreateProject(c *gin.Context) {
 		return
 	}
 
-	project, err := services.CreateProject(req.Name, req.Description)
+	project, err := services.CreateProject(c, req.Name, req.Description)
 	if err != nil {
 		if errors.Is(err, services.ErrProjectExists) {
 			response.BadRequest(c, err.Error())
@@ -327,7 +342,7 @@ func UpdateProject(c *gin.Context) {
 		return
 	}
 
-	project, err := services.UpdateProject(id, req.Name, req.Description)
+	project, err := services.UpdateProject(c, id, req.Name, req.Description)
 	if err != nil {
 		if errors.Is(err, services.ErrProjectExists) {
 			response.BadRequest(c, err.Error())
@@ -353,7 +368,7 @@ func DeleteProject(c *gin.Context) {
 		return
 	}
 
-	if err := services.DeleteProject(id); err != nil {
+	if err := services.DeleteProject(c, id); err != nil {
 		if errors.Is(err, services.ErrProjectNotFound) {
 			response.NotFound(c, "Project not found")
 			return
@@ -374,7 +389,7 @@ func DeleteTestRun(c *gin.Context) {
 		return
 	}
 
-	if err := services.DeleteTestRun(id); err != nil {
+	if err := services.DeleteTestRun(c, id); err != nil {
 		if errors.Is(err, services.ErrTestRunNotFound) {
 			response.NotFound(c, "Test run not found")
 			return
@@ -404,7 +419,7 @@ func UpdateTestRunVisibility(c *gin.Context) {
 		return
 	}
 
-	if err := services.UpdateTestRunVisibility(id, req.IsPublic); err != nil {
+	if err := services.UpdateTestRunVisibility(c, id, req.IsPublic); err != nil {
 		if errors.Is(err, services.ErrTestRunNotFound) {
 			response.NotFound(c, "Test run not found")
 			return
@@ -414,7 +429,7 @@ func UpdateTestRunVisibility(c *gin.Context) {
 	}
 
 	// 返回更新后的测试运行
-	testRun, err := services.GetTestRunByID(id)
+	testRun, err := services.GetTestRunByID(c, id)
 	if err != nil {
 		response.InternalServerError(c, "Failed to get updated test run")
 		return
@@ -454,12 +469,18 @@ func GetTestRunsAdmin(c *gin.Context) {
 		}
 	}
 
+	logger.LogInfo(c, logger.ModuleHandler, "get_test_runs_admin branch=%s commit_id=%s test_type=%s status=%s page=%d page_size=%d",
+		params.Branch, params.CommitID, params.TestType, params.Status, params.Page, params.PageSize)
+
 	// 管理员接口包含私有记录
-	testRuns, total, err := services.QueryTestRuns(params, true)
+	testRuns, total, err := services.QueryTestRuns(c, params, true)
 	if err != nil {
+		logger.LogError(c, logger.ModuleHandler, err, "get_test_runs_admin failed")
 		response.InternalServerError(c, "Failed to query test runs")
 		return
 	}
+
+	logger.LogInfo(c, logger.ModuleHandler, "get_test_runs_admin success total=%d count=%d", total, len(testRuns))
 
 	response.Success(c, gin.H{
 		"test_runs": testRuns,
@@ -471,7 +492,7 @@ func GetTestRunsAdmin(c *gin.Context) {
 
 // GetSystemConfigs 获取所有系统配置
 func GetSystemConfigs(c *gin.Context) {
-	configs, err := services.GetAllConfigs()
+	configs, err := services.GetAllConfigs(c)
 	if err != nil {
 		response.InternalServerError(c, "Failed to get system configs")
 		return
@@ -488,7 +509,7 @@ func GetSystemConfig(c *gin.Context) {
 		return
 	}
 
-	value, err := services.GetConfig(key)
+	value, err := services.GetConfigWithContext(c, key)
 	if err != nil {
 		response.NotFound(c, "Config not found")
 		return
@@ -518,7 +539,7 @@ func UpdateSystemConfig(c *gin.Context) {
 		return
 	}
 
-	if err := services.SetConfig(key, req.Value, req.Description); err != nil {
+	if err := services.SetConfig(c, key, req.Value, req.Description); err != nil {
 		response.InternalServerError(c, "Failed to update system config")
 		return
 	}
