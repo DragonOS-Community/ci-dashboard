@@ -7,6 +7,7 @@ import (
 
 	"github.com/dragonos/dragonos-ci-dashboard/internal/config"
 	"github.com/dragonos/dragonos-ci-dashboard/internal/models"
+	"github.com/dragonos/dragonos-ci-dashboard/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -53,15 +54,26 @@ func ValidateAPIKey(apiKey string) (*models.APIKey, error) {
 
 // CreateAPIKey 创建API Key
 func CreateAPIKey(c *gin.Context, name string, projectID *uint64, expiresAt *string) (*models.APIKey, string, error) {
+	logger.LogInfo(
+		c,
+		logger.ModuleService,
+		"create_api_key started name=%s project_id=%v expires_at=%v",
+		name,
+		projectID,
+		expiresAt,
+	)
+
 	// 生成新的API Key
 	apiKey, err := GenerateAPIKey()
 	if err != nil {
+		logger.LogError(c, logger.ModuleService, err, "create_api_key generate_failed name=%s", name)
 		return nil, "", fmt.Errorf("failed to generate API key: %w", err)
 	}
 
 	// 哈希API Key
 	keyHash, err := HashAPIKey(apiKey)
 	if err != nil {
+		logger.LogError(c, logger.ModuleService, err, "create_api_key hash_failed name=%s", name)
 		return nil, "", fmt.Errorf("failed to hash API key: %w", err)
 	}
 
@@ -78,9 +90,26 @@ func CreateAPIKey(c *gin.Context, name string, projectID *uint64, expiresAt *str
 	}
 
 	db := getDB(c)
+	logger.LogDebug(
+		c,
+		logger.ModuleService,
+		"create_api_key saving_to_db name=%s project_id=%v",
+		name,
+		projectID,
+	)
 	if err := db.Create(newKey).Error; err != nil {
+		logger.LogError(c, logger.ModuleService, err, "create_api_key db_create_failed name=%s", name)
 		return nil, "", fmt.Errorf("failed to create API key: %w", err)
 	}
+
+	logger.LogInfo(
+		c,
+		logger.ModuleService,
+		"create_api_key completed api_key_id=%d name=%s project_id=%v",
+		newKey.ID,
+		newKey.Name,
+		newKey.ProjectID,
+	)
 
 	return newKey, apiKey, nil
 }

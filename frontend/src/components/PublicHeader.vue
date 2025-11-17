@@ -1,26 +1,26 @@
 <template>
   <header class="header">
-      <div class="header-content">
-        <div
-          class="logo"
-          :class="{ 'logo-clickable': showBack }"
-          @click="handleLogoClick"
-        >
-          <img :src="logoImage" class="logo-icon" alt="DragonOS Logo" />
-          <span class="logo-text">DragonOS CI Dashboard</span>
-        </div>
-        <div class="header-actions">
-          <t-button
-            theme="default"
-            variant="outline"
-            @click="goToCommunity"
-            class="community-btn"
-          >
-            <t-icon name="logo-github" />
-            社区主页
-          </t-button>
-        </div>
+    <div class="header-content">
+      <div
+        class="logo"
+        :class="{ 'logo-clickable': showBack }"
+        @click="handleLogoClick"
+      >
+        <img :src="logoImage" class="logo-icon" alt="DragonOS Logo" />
+        <span class="logo-text">DragonOS CI Dashboard</span>
       </div>
+      <div class="header-actions">
+        <t-button
+          theme="default"
+          variant="outline"
+          @click="goToCommunity"
+          class="community-btn"
+        >
+          <t-icon name="logo-github" />
+          社区主页
+        </t-button>
+      </div>
+    </div>
   </header>
 </template>
 

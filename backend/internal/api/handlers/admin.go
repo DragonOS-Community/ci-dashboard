@@ -122,16 +122,36 @@ func CreateAPIKey(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.LogWarn(c, logger.ModuleHandler, "create_api_key invalid_request error=%s", err.Error())
 		response.BadRequest(c, err.Error())
 		return
 	}
 
+	logger.LogInfo(
+		c,
+		logger.ModuleHandler,
+		"create_api_key request_received name=%s project_id=%v expires_at=%v",
+		req.Name,
+		req.ProjectID,
+		req.ExpiresAt,
+	)
+
 	// 创建API密钥（expiresAt 直接使用请求中的字符串）
 	apiKey, key, err := services.CreateAPIKey(c, req.Name, req.ProjectID, req.ExpiresAt)
 	if err != nil {
+		logger.LogError(c, logger.ModuleHandler, err, "create_api_key service_failed name=%s", req.Name)
 		response.InternalServerError(c, "Failed to create API key")
 		return
 	}
+
+	logger.LogInfo(
+		c,
+		logger.ModuleHandler,
+		"create_api_key success api_key_id=%d project_id=%v name=%s",
+		apiKey.ID,
+		apiKey.ProjectID,
+		apiKey.Name,
+	)
 
 	response.Success(c, gin.H{
 		"id":         apiKey.ID,
