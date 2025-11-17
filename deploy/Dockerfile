@@ -12,6 +12,8 @@ RUN npm ci --only=production
 # 复制前端源代码
 COPY frontend/ .
 
+RUN npm install
+
 # 构建前端应用
 RUN npm run build
 
@@ -22,6 +24,8 @@ FROM ubuntu:24.04 AS backend-builder
 ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app/backend
+
+RUN sed -i 's@//.*archive.ubuntu.com@//mirrors.ustc.edu.cn@g' /etc/apt/sources.list.d/ubuntu.sources
 
 # 安装 Go、make 和构建依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
