@@ -1,19 +1,26 @@
 <template>
   <header class="header">
-    <div class="header-content">
-      <div
-        class="logo"
-        :class="{ 'logo-clickable': showBack }"
-        @click="handleLogoClick"
-      >
-        <img :src="logoImage" class="logo-icon" alt="DragonOS Logo" />
-        <span class="logo-text">DragonOS CI Dashboard</span>
+      <div class="header-content">
+        <div
+          class="logo"
+          :class="{ 'logo-clickable': showBack }"
+          @click="handleLogoClick"
+        >
+          <img :src="logoImage" class="logo-icon" alt="DragonOS Logo" />
+          <span class="logo-text">DragonOS CI Dashboard</span>
+        </div>
+        <div class="header-actions">
+          <t-button
+            theme="default"
+            variant="outline"
+            @click="goToCommunity"
+            class="community-btn"
+          >
+            <t-icon name="logo-github" />
+            社区主页
+          </t-button>
+        </div>
       </div>
-      <t-button theme="warning" variant="outline" @click="goToLogin">
-        <t-icon name="user" />
-        管理员登录
-      </t-button>
-    </div>
   </header>
 </template>
 
@@ -39,8 +46,8 @@ const handleLogoClick = () => {
   }
 };
 
-const goToLogin = () => {
-  router.push("/admin/login");
+const goToCommunity = () => {
+  window.open("https://github.com/DragonOS-Community/DragonOS", "_blank");
 };
 </script>
 
@@ -93,10 +100,59 @@ const goToLogin = () => {
   color: #1f2937;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.community-btn {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  height: 40px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  border-color: #e5e7eb;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.community-btn :deep(.t-button__text) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  line-height: 1;
+}
+
+.community-btn :deep(.t-icon) {
+  font-size: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.community-btn:hover {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+  color: #1f2937;
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
   .header-content {
     padding: 0 16px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .community-btn :deep(.t-button__text) {
+    font-size: 13px;
   }
 }
 </style>

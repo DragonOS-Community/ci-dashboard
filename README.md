@@ -27,25 +27,6 @@ CI测试结果Dashboard系统，用于展示和管理DragonOS项目的CI测试�
 - Vue Router
 - Vite构建工具
 
-## 快速开始
-
-### 使用Docker Compose（推荐）
-
-1. 复制环境变量文件：
-```bash
-cp .env.example .env
-```
-
-2. 修改`.env`文件中的配置（特别是数据库密码和JWT密钥）
-
-3. 启动服务：
-```bash
-docker-compose up -d
-```
-
-4. 访问应用：
-- 前端: http://localhost:3000
-- 后端API: http://localhost:8080/api/v1
 
 ### 本地开发
 
@@ -61,16 +42,16 @@ cd backend
 go mod download
 ```
 
-3. 配置环境变量（参考`.env.example`）
+3. 配置设置
 
-4. 运行数据库迁移：
 ```bash
-migrate -path ./migrations -database "mysql://user:password@tcp(localhost:3306)/dragonos_ci" up
+cp config.toml.example config.toml
+# 然后设置数据库连接等信息
 ```
 
-5. 启动服务：
+4. 启动服务：
 ```bash
-go run cmd/server/main.go
+make run
 ```
 
 #### 前端开发
@@ -89,27 +70,6 @@ npm install
 ```bash
 npm run dev
 ```
-
-## API文档
-
-### 公开接口
-
-- `GET /api/v1/test-runs` - 查询测试运行记录
-- `GET /api/v1/test-runs/:id` - 获取测试运行详情
-- `GET /api/v1/test-runs/:id/test-cases` - 获取测例列表
-- `GET /api/v1/test-runs/:id/output-files/:fileId` - 下载原始输出文件
-
-### 受保护接口（需要API Key）
-
-- `POST /api/v1/test-runs` - 上传测试结果
-- `POST /api/v1/test-runs/:id/output-files` - 上传原始输出文件
-
-### 管理接口（需要JWT认证）
-
-- `POST /api/v1/admin/login` - 管理员登录
-- `GET /api/v1/admin/api-keys` - 查看API密钥列表
-- `POST /api/v1/admin/api-keys` - 创建API密钥
-- `DELETE /api/v1/admin/api-keys/:id` - 删除API密钥
 
 ## 项目结构
 

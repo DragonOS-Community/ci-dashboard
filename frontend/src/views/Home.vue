@@ -159,6 +159,9 @@
         </div>
       </div>
     </main>
+
+    <!-- 页脚 -->
+    <Footer />
   </div>
 </template>
 
@@ -169,6 +172,7 @@ import { useTestRunStore } from "@/stores/testRun";
 import { MessagePlugin } from "tdesign-vue-next";
 import MasterStatsCard from "@/components/MasterStatsCard.vue";
 import PublicHeader from "@/components/PublicHeader.vue";
+import Footer from "@/components/Footer.vue";
 
 const router = useRouter();
 const testRunStore = useTestRunStore();
@@ -281,11 +285,14 @@ onMounted(() => {
 .home-container {
   min-height: 100vh;
   background-color: #f9fafb;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 主内容区 */
 .main-content {
   padding: 32px;
+  flex: 1;
 }
 
 .content-wrapper {

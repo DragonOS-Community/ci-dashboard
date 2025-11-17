@@ -276,6 +276,9 @@
         </t-loading>
       </div>
     </main>
+
+    <!-- 页脚 -->
+    <Footer />
   </div>
 </template>
 
@@ -291,6 +294,7 @@ import {
 import { MessagePlugin } from "tdesign-vue-next";
 import TestCaseList from "@/components/TestCaseList.vue";
 import PublicHeader from "@/components/PublicHeader.vue";
+import Footer from "@/components/Footer.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -538,6 +542,8 @@ onMounted(() => {
 .detail-container {
   min-height: 100vh;
   background-color: #f9fafb;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 页面标题区域 */
@@ -653,6 +659,7 @@ onMounted(() => {
 /* 主内容区 */
 .main-content {
   padding: 32px;
+  flex: 1;
 }
 
 .content-wrapper {

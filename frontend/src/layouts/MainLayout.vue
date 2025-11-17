@@ -116,6 +116,9 @@
           </transition>
         </router-view>
       </main>
+
+      <!-- 页脚 -->
+      <Footer />
     </div>
   </div>
 </template>
@@ -126,6 +129,7 @@ import { useRouter, useRoute } from "vue-router";
 import { useAdminStore } from "@/stores/admin";
 import { MessagePlugin } from "tdesign-vue-next";
 import logoImage from "@/assets/dragonos.jpeg";
+import Footer from "@/components/Footer.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -362,6 +366,7 @@ const handleLogout = async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 .header {
