@@ -17,7 +17,7 @@ services:
     networks:
       - dragonos-ci-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,48 +40,6 @@ services:
       - dragonos-ci-network
     restart: unless-stopped
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: dragonos-ci-backend
-    environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: ${DB_PASSWORD:-rootpassword}
-      DB_NAME: ${DB_NAME:-dragonos_ci}
-      SERVER_HOST: 0.0.0.0
-      SERVER_PORT: 8080
-      STORAGE_PATH: /data/uploads
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key}
-      API_KEY_HASH_SALT: ${API_KEY_HASH_SALT:-your-salt}
-      CORS_ALLOW_ORIGINS: http://localhost:3000
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./data/uploads:/data/uploads
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - dragonos-ci-network
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: dragonos-ci-frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    networks:
-      - dragonos-ci-network
-    restart: unless-stopped
-
 networks:
   dragonos-ci-network:
     driver: bridge
-

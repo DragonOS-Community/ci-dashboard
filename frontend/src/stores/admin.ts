@@ -9,7 +9,12 @@ import {
   updatePassword,
 } from "@/api/admin";
 import { MessagePlugin } from "tdesign-vue-next";
-import type { APIKey, Profile, APIKeyData } from "@/api/admin";
+import type {
+  APIKey,
+  Profile,
+  APIKeyData,
+  CreateAPIKeyResponse,
+} from "@/api/admin";
 
 export interface User {
   id: string;
@@ -69,13 +74,15 @@ export const useAdminStore = defineStore("admin", () => {
   // 创建API密钥
   async function createKey(
     name: string,
-    description?: string,
-    expiresAt?: string,
-  ): Promise<APIKey | null> {
+    projectId?: number | null,
+    expiresAt?: string | null,
+  ): Promise<CreateAPIKeyResponse | null> {
     loading.value = true;
     try {
       const data: APIKeyData = { name };
-      if (description) data.description = description;
+      if (projectId !== null && projectId !== undefined) {
+        data.project_id = projectId;
+      }
       if (expiresAt) data.expires_at = expiresAt;
 
       const res = await createAPIKey(data);

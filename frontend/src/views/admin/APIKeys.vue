@@ -160,7 +160,11 @@ const projects = ref<Project[]>([]);
 const projectsLoading = ref(false);
 const selectedProjectInDialog = ref<Project | null>(null);
 
-const createForm = ref({
+const createForm = ref<{
+  name: string;
+  project_id: number | null;
+  expires_at: string | null;
+}>({
   name: "",
   project_id: null,
   expires_at: null,
@@ -205,7 +209,7 @@ const fetchProjects = async () => {
   }
 };
 
-const handleProjectRowClick = ({ row }) => {
+const handleProjectRowClick = ({ row }: { row: Project }) => {
   selectedProjectInDialog.value = row;
 };
 
@@ -233,10 +237,10 @@ const handleCreate = async () => {
     return;
   }
 
-  const projectId = createForm.value.project_id || null;
+  const projectId = createForm.value.project_id ?? undefined;
   const expiresAt = createForm.value.expires_at
     ? new Date(createForm.value.expires_at).toISOString()
-    : null;
+    : undefined;
 
   const result = await adminStore.createKey(
     createForm.value.name,

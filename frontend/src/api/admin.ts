@@ -9,18 +9,23 @@ export interface LoginData {
 
 export interface APIKeyData {
   name: string;
-  description?: string;
+  project_id?: number;
   expires_at?: string;
 }
 
 export interface APIKey {
   id: string;
   name: string;
-  description?: string;
-  key: string;
+  project_id?: number;
   expires_at?: string;
   created_at: string;
-  updated_at: string;
+  last_used_at?: string;
+  updated_at?: string;
+}
+
+// 创建API Key时的响应（包含原始密钥）
+export interface CreateAPIKeyResponse extends APIKey {
+  api_key: string;
 }
 
 export interface Profile {
@@ -57,7 +62,9 @@ export function getAPIKeys(): AxiosPromise<APIKey[]> {
 }
 
 // 创建API密钥
-export function createAPIKey(data: APIKeyData): AxiosPromise<APIKey> {
+export function createAPIKey(
+  data: APIKeyData,
+): AxiosPromise<CreateAPIKeyResponse> {
   return request({
     url: "/admin/api-keys",
     method: "post",

@@ -87,6 +87,7 @@ WORKDIR /app
 COPY --from=frontend-builder /app/frontend/dist /var/www/html
 COPY --from=backend-builder /app/backend/bin/server /app/backend/server
 COPY --from=backend-builder /app/backend/bin/admin-cli /app/backend/admin-cli
+COPY --from=backend-builder /app/backend/migrations /app/backend/migrations
 
 # 复制 nginx 配置
 COPY deploy/nginx.conf /etc/nginx/nginx.conf
