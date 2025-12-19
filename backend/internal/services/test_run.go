@@ -230,10 +230,11 @@ func GetMasterBranchLatestStats(c *gin.Context) (*MasterBranchStats, error) {
 		duration = result.TotalDuration
 	}
 
-	// 计算通过率
+	// 计算通过率（跳过测例不计入分母）
 	passRate := 0.0
-	if totalCases > 0 {
-		passRate = float64(passedCases) / float64(totalCases) * 100.0
+	validCases := passedCases + failedCases // 只计算通过和失败的测例
+	if validCases > 0 {
+		passRate = float64(passedCases) / float64(validCases) * 100.0
 	}
 
 	stats := &MasterBranchStats{
@@ -370,10 +371,10 @@ func GetDashboardStats(c *gin.Context) (*DashboardStats, error) {
 	stats.FailedCount = totalFailedCases
 	stats.SkippedCount = totalSkippedCases
 
-	// 计算成功率（基于测例）
-	totalCases := totalSuccessCases + totalFailedCases + totalSkippedCases
-	if totalCases > 0 {
-		stats.SuccessRate = float64(totalSuccessCases) / float64(totalCases) * 100.0
+	// 计算成功率（基于测例，跳过测例不计入分母）
+	validCases := totalSuccessCases + totalFailedCases // 只计算通过和失败的测例
+	if validCases > 0 {
+		stats.SuccessRate = float64(totalSuccessCases) / float64(validCases) * 100.0
 	}
 
 	// 上期成功率（7天前的数据）
@@ -398,9 +399,9 @@ func GetDashboardStats(c *gin.Context) (*DashboardStats, error) {
 				Where("test_run_id IN (?) AND status = ?", prevRunIDs, models.TestCaseStatusSkipped).
 				Count(&prevSkippedCases)
 		}
-		prevTotalCases := prevSuccessCases + prevFailedCases + prevSkippedCases
-		if prevTotalCases > 0 {
-			stats.SuccessRatePrev = float64(prevSuccessCases) / float64(prevTotalCases) * 100.0
+		prevValidCases := prevSuccessCases + prevFailedCases // 只计算通过和失败的测例
+		if prevValidCases > 0 {
+			stats.SuccessRatePrev = float64(prevSuccessCases) / float64(prevValidCases) * 100.0
 		}
 	}
 

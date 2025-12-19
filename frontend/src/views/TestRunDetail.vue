@@ -148,6 +148,10 @@
                   <div class="stat-value">{{ failedTestCases.length }}</div>
                   <div class="stat-label">失败</div>
                 </div>
+                <div class="stat-item" v-if="skippedTestCases.length > 0">
+                  <div class="stat-value">{{ skippedTestCases.length }}</div>
+                  <div class="stat-label">跳过</div>
+                </div>
                 <div class="stat-item">
                   <div class="stat-value">{{ passRate }}%</div>
                   <div class="stat-label">通过率</div>
@@ -175,6 +179,11 @@
                   <t-tab-panel
                     value="failed"
                     :label="`失败 (${failedTestCases.length})`"
+                  >
+                  </t-tab-panel>
+                  <t-tab-panel
+                    value="skipped"
+                    :label="`跳过 (${skippedTestCases.length})`"
                   >
                   </t-tab-panel>
                 </t-tabs>
@@ -316,6 +325,9 @@ const passedTestCases = computed(() =>
 const failedTestCases = computed(() =>
   testCases.value.filter((tc) => tc.status === "failed"),
 );
+const skippedTestCases = computed(() =>
+  testCases.value.filter((tc) => tc.status === "skipped"),
+);
 
 // 根据标签页过滤的测例
 const tabFilteredTestCases = computed(() => {
@@ -324,6 +336,8 @@ const tabFilteredTestCases = computed(() => {
       return passedTestCases.value;
     case "failed":
       return failedTestCases.value;
+    case "skipped":
+      return skippedTestCases.value;
     default:
       return allTestCases.value;
   }
@@ -420,10 +434,11 @@ const handleSortChange = (sortInfo) => {
 };
 
 const passRate = computed(() => {
-  if (allTestCases.value.length === 0) return 0;
-  return Math.round(
-    (passedTestCases.value.length / allTestCases.value.length) * 100,
-  );
+  // 通过率 = 通过数 / (通过数 + 失败数) * 100，跳过测例不计入分母
+  const validCases =
+    passedTestCases.value.length + failedTestCases.value.length;
+  if (validCases === 0) return 0;
+  return Math.round((passedTestCases.value.length / validCases) * 100);
 });
 
 const getStatusText = (status) => {
